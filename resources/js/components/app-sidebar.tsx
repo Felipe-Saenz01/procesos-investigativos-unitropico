@@ -1,11 +1,11 @@
 // import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroupContent, SidebarGroupLabel, SidebarSeparator } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig  } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -14,6 +14,25 @@ const mainNavItems: NavItem[] = [
         href: '/dashboard',
         icon: LayoutGrid,
     },
+];
+
+const NavParamsItems: NavItem[] = [
+    {
+        title: 'Periodos',
+        href: '/parametros/periodos',
+        icon: LayoutList,
+    },
+    {
+        title: 'Tipos Productos',
+        // href: '/parametros/tipo-producto',
+        href: route('parametros.tipo-producto.index'),
+        icon: Layers2,
+    },
+    {
+        title: 'Subtipos Productos',
+        href: '/parametros/subtipos-productos',
+        icon: LibraryBig,
+    }
 ];
 
 // const footerNavItems: NavItem[] = [
@@ -30,12 +49,13 @@ const mainNavItems: NavItem[] = [
 // ];
 
 export function AppSidebar() {
+    const page = usePage();
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton size="lg" asChild >
                             <Link href="/dashboard" prefetch>
                                 <AppLogo />
                             </Link>
@@ -46,6 +66,22 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                <SidebarSeparator className='px-2 w-full' />
+                <SidebarGroupContent className='px-2'>
+                    <SidebarGroupLabel>Parámetros</SidebarGroupLabel>
+                    <SidebarMenu>
+                        {NavParamsItems.map((item) => (
+                            <SidebarMenuItem key={item.title}>
+                                <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
+                                    <Link href={item.href} prefetch>
+                                        {item.icon && <item.icon />}
+                                        <span> {item.title}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
             </SidebarContent>
 
             <SidebarFooter>
