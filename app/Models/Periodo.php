@@ -17,11 +17,11 @@ class Periodo extends Model
         'fecha_limite_evidencias',
         'estado'
     ];
-
+    
     protected $casts = [
-        'fecha_limite_planeacion' => 'date',
-        'fecha_limite_evidencias' => 'date',
-    ];
+            'fecha_limite_planeacion' => 'date',
+            'fecha_limite_evidencias' => 'date',
+        ];
 
     public function entregas(): HasMany
     {

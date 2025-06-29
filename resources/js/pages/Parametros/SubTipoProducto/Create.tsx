@@ -53,27 +53,27 @@ export default function Create({ tiposProductos }: CreateProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Nuevo Subtipo Producto" />
             <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
-                <form onSubmit={handleSubmit} className='sm:w-2/5'>
-                    <Card className=''>
-                        <CardHeader>
-                            <CardTitle className='text-2xl flex justify-between items-center'>
-                                Crear un Nuevo Subtipo Producto
-                            </CardTitle>
-                        </CardHeader>
+            <form onSubmit={handleSubmit} className='sm:w-2/5'>
+                <Card className=''>
+                    <CardHeader>
+                        <CardTitle className='text-2xl flex justify-between items-center'>
+                            Crear un Nuevo Subtipo Producto
+                        </CardTitle>
+                    </CardHeader>
                         <CardContent>
-                            {Object.keys(errors).length > 0 && 
-                                <Alert variant='destructive' className='mb-3 w-full'>
-                                    <CircleAlert />
-                                    <AlertTitle>Por favor corrige los siguientes errores:</AlertTitle>
-                                    <AlertDescription>
-                                        <ul className='list-disc pl-5'>
-                                            {Object.values(errors).map((error, index) => (
-                                                <li key={index} className='text-red-500 text-sm'>{error}</li>
-                                            ))}
-                                        </ul>
-                                    </AlertDescription>
-                                </Alert>
-                            }
+                        {Object.keys(errors).length > 0 && 
+                        <Alert variant='destructive' className='mb-3 w-full'>
+                            <CircleAlert />
+                            <AlertTitle>Por favor corrige los siguientes errores:</AlertTitle>
+                            <AlertDescription>
+                                <ul className='list-disc pl-5'>
+                                    {Object.values(errors).map((error, index) => (
+                                        <li key={index} className='text-red-500 text-sm'>{error}</li>
+                                    ))}
+                                </ul>
+                            </AlertDescription>
+                        </Alert>
+                        }
                             
                             <div className="space-y-4">
                                 <div>
@@ -101,15 +101,15 @@ export default function Create({ tiposProductos }: CreateProps) {
                                     />
                                 </div>
                             </div>
-                        </CardContent>
-                        <CardFooter className='flex justify-end'>
+                    </CardContent>
+                    <CardFooter className='flex justify-end'>
                             <Button type='button' variant="destructive" className='mr-3'>
                                 <Link href={route('parametros.subtipo-producto.index')}>Cancelar</Link>
                             </Button>
-                            <Button type='submit' className='bg-primary hover:bg-primary/90'>Crear</Button>
-                        </CardFooter>
-                    </Card>
-                </form>
+                        <Button type='submit' className='bg-primary hover:bg-primary/90'>Crear</Button>
+                    </CardFooter>
+                </Card>
+            </form>
             </div>
         </AppLayout>
     );

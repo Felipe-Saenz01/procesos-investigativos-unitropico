@@ -16,7 +16,6 @@ class GrupoInvestigacion extends Model
 
     public function usuarios(): HasMany
     {
-        // return $this->belongsToMany(User::class, 'grupo_investigacion_user', 'grupo_investigacion_id', 'user_id');
         return $this->hasMany(User::class);
     }
 

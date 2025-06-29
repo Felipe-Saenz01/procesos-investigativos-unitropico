@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\SubTipoProductoController;
 use App\Http\Controllers\TipoProductoController;
@@ -20,6 +21,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('subtipo-producto', SubTipoProductoController::class);
         Route::resource('periodo', PeriodoController::class);
     });
+
+    Route::resource('grupo-investigacion', GrupoInvestigacionController::class);
 });
 
 require __DIR__.'/settings.php';
