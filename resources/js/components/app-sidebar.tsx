@@ -19,7 +19,7 @@ const mainNavItems: NavItem[] = [
 const NavParamsItems: NavItem[] = [
     {
         title: 'Periodos',
-        href: '/parametros/periodos',
+        href: route('parametros.periodo.index'),
         icon: LayoutList,
     },
     {

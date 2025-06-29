@@ -72,7 +72,12 @@ export function SearchSelect({
 }: SearchSelectProps) {
   const [open, setOpen] = React.useState(false)
 
-  const selectedOption = options.find((option) => option.value === value)
+  const selectedOption = options.find((option) => {
+    // Convertir ambos valores a string para comparación consistente
+    const optionValue = String(option.value);
+    const currentValue = String(value);
+    return optionValue === currentValue;
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -107,7 +112,7 @@ export function SearchSelect({
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      String(value) === String(option.value) ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

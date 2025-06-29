@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\SubTipoProductoController;
 use App\Http\Controllers\TipoProductoController;
 use Illuminate\Support\Facades\Route;
@@ -17,12 +18,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('parametros')->name('parametros.')->group(function (){
         Route::resource('tipo-producto', TipoProductoController::class);
         Route::resource('subtipo-producto', SubTipoProductoController::class);
-        
+        Route::resource('periodo', PeriodoController::class);
     });
 });
-
-
-
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

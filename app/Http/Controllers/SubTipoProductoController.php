@@ -60,11 +60,11 @@ class SubTipoProductoController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(SubTipoProducto $subTipoProducto)
+    public function edit(SubTipoProducto $subtipo_producto)
     {
         $tiposProductos = TipoProducto::all();
         return Inertia::render('Parametros/SubTipoProducto/Edit', [
-            'subTipoProducto' => $subTipoProducto->load('tipoProducto'),
+            'subTipoProducto' => $subtipo_producto->load('tipoProducto'),
             'tiposProductos' => $tiposProductos,
         ]);
     }
@@ -72,14 +72,14 @@ class SubTipoProductoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, SubTipoProducto $subTipoProducto)
+    public function update(Request $request, SubTipoProducto $subtipo_producto)
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
             'tipo_producto_id' => 'required|exists:tipo_productos,id',
         ]);
 
-        $subTipoProducto->update([
+        $subtipo_producto->update([
             'nombre' => $request->nombre,
             'tipo_producto_id' => $request->tipo_producto_id,
         ]);
@@ -90,9 +90,9 @@ class SubTipoProductoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SubTipoProducto $subTipoProducto)
+    public function destroy(SubTipoProducto $subtipo_producto)
     {
-        $subTipoProducto->delete();
+        $subtipo_producto->delete();
         return to_route('parametros.subtipo-producto.index')->with('success', 'Subtipo de producto eliminado exitosamente.');
     }
 }
