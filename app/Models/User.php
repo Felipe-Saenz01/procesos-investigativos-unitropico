@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -44,5 +46,27 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relacion con HorasInvestigacion
+    public function horasInvestigacion(): HasMany
+    {
+        return $this->hasMany(HorasInvestigacion::class);
+    }
+
+    // Relación con GrupoInvestigacion
+    public function gruposInvestigacion(): BelongsTo
+    {
+        return $this->belongsTo(GrupoInvestigacion::class, 'grupo_investigacion_id');
+    }
+
+    public function entregas(): HasMany
+    {
+        return $this->hasMany(EntregaProducto::class);
+    }
+
+    public function proyectos(): HasMany
+    {
+        return $this->hasMany(ProyectoInvestigativo::class);
     }
 }

@@ -9,4 +9,13 @@ class SubTipoProducto extends Model
 {
     /** @use HasFactory<\Database\Factories\SubTipoProductoFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'nombre',
+        'tipo_producto_id',
+    ];
+
+    public function tipoProducto() {
+        return $this->belongsTo(TipoProducto::class);
+    }
 }

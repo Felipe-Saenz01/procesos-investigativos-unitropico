@@ -30,7 +30,7 @@ const NavParamsItems: NavItem[] = [
     },
     {
         title: 'Subtipos Productos',
-        href: '/parametros/subtipos-productos',
+        href: route('parametros.subtipo-producto.index'),
         icon: LibraryBig,
     }
 ];
