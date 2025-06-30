@@ -16,10 +16,11 @@ class InvestigadorController extends Controller
      */
     public function index()
     {
-        $investigadores = User::with(['grupos_investigacion'])
+        $investigadores = User::with(['grupo_investigacion'])
             ->whereIn('role', ['Investigador', 'Lider Grupo'])
             ->orderBy('name')
             ->get();
+
         return Inertia::render('Investigadores/Index', [
             'investigadores' => $investigadores,
         ]);

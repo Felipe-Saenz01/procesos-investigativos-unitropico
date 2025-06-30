@@ -21,6 +21,6 @@ class GrupoInvestigacion extends Model
 
     public function proyectos(): BelongsToMany
     {
-        return $this->belongsToMany(ProyectoInvestigativo::class, 'proyecto_grupo');
+        return $this->belongsToMany(ProyectoInvestigativo::class, 'proyecto_grupo', 'grupo_investigacion_id', 'proyecto_investigativo_id');
     }
 }

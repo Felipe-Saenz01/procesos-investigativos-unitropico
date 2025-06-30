@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Clock, SquarePen, Users } from 'lucide-react';
+import { CircleCheckBig, CircleX, Clock, SquarePen } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -26,7 +26,7 @@ interface Investigador {
     email: string;
     role: string;
     grupo_investigacion_id: number;
-    grupos_investigacion?: GrupoInvestigacion;
+    grupo_investigacion?: GrupoInvestigacion;
 }
 
 interface InvestigadoresProps {
@@ -84,7 +84,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                         <TableHead className='w-1/4'>Correo</TableHead>
                                         <TableHead className='w-1/6'>Rol</TableHead>
                                         <TableHead className='w-1/4'>Grupo de Investigación</TableHead>
-                                        <TableHead className='w-1/6'>Acciones</TableHead>
+                                        <TableHead className='w-1/5'>Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -96,12 +96,12 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                                 {getRoleBadge(investigador.role)}
                                             </TableCell>
                                             <TableCell className='w-1/4'>
-                                                {investigador.grupos_investigacion ? 
-                                                    investigador.grupos_investigacion.nombre : 
+                                                {investigador.grupo_investigacion ? 
+                                                    investigador.grupo_investigacion.nombre : 
                                                     <span className="text-gray-400">Sin grupo asignado</span>
                                                 }
                                             </TableCell>
-                                            <TableCell className='w-1/6 flex gap-2 justify-end'>
+                                            <TableCell className='w-1/5 flex gap-2 justify-end'>
                                                 <Link href={route('investigadores.edit', investigador.id)} prefetch>
                                                     <Button variant="outline" size="sm" title="Editar investigador">
                                                         <SquarePen className="h-4 w-4" />

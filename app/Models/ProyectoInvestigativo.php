@@ -38,7 +38,7 @@ class ProyectoInvestigativo extends Model
 
     public function productos(): HasMany
     {
-        return $this->hasMany(ProductoInvestigativo::class);
+        return $this->hasMany(ProductoInvestigativo::class, 'proyecto_investigacion_id');
     }
 
     public function usuario(): BelongsTo
@@ -48,6 +48,6 @@ class ProyectoInvestigativo extends Model
 
     public function grupos(): BelongsToMany
     {
-        return $this->belongsToMany(GrupoInvestigacion::class, 'proyecto_grupo');
+        return $this->belongsToMany(GrupoInvestigacion::class, 'proyecto_grupo', 'proyecto_investigativo_id', 'grupo_investigacion_id');
     }
 }

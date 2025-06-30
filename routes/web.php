@@ -3,6 +3,7 @@
 use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
 use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\ProyectoInvestigativoController;
 use App\Http\Controllers\SubTipoProductoController;
 use App\Http\Controllers\TipoProductoController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('investigadores/{investigador}/horas', [InvestigadorController::class, 'storeHoras'])->name('investigadores.storeHoras');
     Route::put('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'updateHoras'])->name('investigadores.updateHoras');
     Route::delete('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'destroyHoras'])->name('investigadores.destroyHoras');
+
+    // Rutas para Proyectos Investigativos
+    Route::resource('proyectos', ProyectoInvestigativoController::class);
 });
 
 require __DIR__.'/settings.php';
