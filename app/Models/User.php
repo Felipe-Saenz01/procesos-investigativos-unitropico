@@ -23,6 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'grupo_investigacion_id',
     ];
 
     /**
@@ -55,7 +57,7 @@ class User extends Authenticatable
     }
 
     // Relación con GrupoInvestigacion
-    public function gruposInvestigacion(): BelongsTo
+    public function grupos_investigacion(): BelongsTo
     {
         return $this->belongsTo(GrupoInvestigacion::class, 'grupo_investigacion_id');
     }

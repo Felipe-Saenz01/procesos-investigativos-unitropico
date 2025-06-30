@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\GrupoInvestigacionController;
+use App\Http\Controllers\InvestigadorController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\SubTipoProductoController;
 use App\Http\Controllers\TipoProductoController;
@@ -23,6 +24,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::resource('grupo-investigacion', GrupoInvestigacionController::class);
+    
+    // Rutas para Investigadores
+    Route::get('investigadores', [InvestigadorController::class, 'index'])->name('investigadores.index');
+    Route::get('investigadores/{investigador}/edit', [InvestigadorController::class, 'edit'])->name('investigadores.edit');
+    Route::put('investigadores/{investigador}', [InvestigadorController::class, 'update'])->name('investigadores.update');
+    
+    // Rutas para horas de investigación
+    Route::get('investigadores/{investigador}/horas', [InvestigadorController::class, 'horas'])->name('investigadores.horas');
+    Route::post('investigadores/{investigador}/horas', [InvestigadorController::class, 'storeHoras'])->name('investigadores.storeHoras');
+    Route::put('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'updateHoras'])->name('investigadores.updateHoras');
+    Route::delete('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'destroyHoras'])->name('investigadores.destroyHoras');
 });
 
 require __DIR__.'/settings.php';
