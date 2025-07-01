@@ -3,6 +3,7 @@
 use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
 use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\ProductoInvestigativoController;
 use App\Http\Controllers\ProyectoInvestigativoController;
 use App\Http\Controllers\SubTipoProductoController;
 use App\Http\Controllers\TipoProductoController;
@@ -39,6 +40,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Rutas para Proyectos Investigativos
     Route::resource('proyectos', ProyectoInvestigativoController::class);
+
+    // Rutas para Productos Investigativos
+    Route::resource('productos', ProductoInvestigativoController::class);
 });
 
 require __DIR__.'/settings.php';

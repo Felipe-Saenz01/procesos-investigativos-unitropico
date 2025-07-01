@@ -258,9 +258,11 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                             <FileText className="h-5 w-5" />
                                             Productos Investigativos
                                         </CardTitle>
-                                        <Button disabled>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Crear Producto
+                                        <Button asChild>
+                                            <Link href={route('productos.create', { proyecto_id: proyecto.id })}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Crear Producto
+                                            </Link>
                                         </Button>
                                     </div>
                                 </CardHeader>
@@ -296,8 +298,10 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                                             {new Date(producto.created_at).toLocaleDateString('es-ES')}
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Button variant="outline" size="sm" disabled>
-                                                                <Eye className="h-4 w-4" />
+                                                            <Button asChild variant="outline" size="sm">
+                                                                <Link href={route('productos.show', producto.id)}>
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Link>
                                                             </Button>
                                                         </TableCell>
                                                     </TableRow>
@@ -308,9 +312,11 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                         <div className="text-center py-8">
                                             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                             <p className="text-gray-500 mb-4">No hay productos investigativos asociados a este proyecto</p>
-                                            <Button disabled>
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Crear Primer Producto
+                                            <Button asChild>
+                                                <Link href={route('productos.create', { proyecto_id: proyecto.id })}>
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Crear Primer Producto
+                                                </Link>
                                             </Button>
                                         </div>
                                     )}

@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -28,6 +28,11 @@ const mainNavItems: NavItem[] = [
         title: 'Proyectos',
         href: route('proyectos.index'),
         icon: SquareChartGantt,
+    },
+    {
+        title: 'Productos',
+        href: route('productos.index'),
+        icon: FileText,
     }
 ];
 
