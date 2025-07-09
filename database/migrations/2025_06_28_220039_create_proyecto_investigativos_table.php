@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('proyecto_investigativos', function (Blueprint $table) {
             $table->id();
             $table->string('titulo');
-            $table->foreignId('user_id')->constrained('users');
+            // $table->foreignId('user_id')->constrained('users');
             $table->string('eje_tematico');
             $table->text('resumen_ejecutivo');
             $table->text('planteamiento_problema');

@@ -258,12 +258,14 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                             <FileText className="h-5 w-5" />
                                             Productos Investigativos
                                         </CardTitle>
+                                        {proyecto.estado === 'Formulado' && (
                                         <Button asChild>
-                                            <Link href={route('productos.create', { proyecto_id: proyecto.id })}>
+                                            <Link href={route('productos.create')}>
                                                 <Plus className="h-4 w-4 mr-2" />
                                                 Crear Producto
                                             </Link>
                                         </Button>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardContent>

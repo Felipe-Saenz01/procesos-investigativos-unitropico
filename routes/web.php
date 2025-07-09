@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EntregaProductoController;
 use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
 use App\Http\Controllers\PeriodoController;
@@ -43,6 +44,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Rutas para Productos Investigativos
     Route::resource('productos', ProductoInvestigativoController::class);
+
+    // Rutas para Entregas de Productos
+    Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');
+    Route::post('productos/{producto}/entregas/planeacion', [EntregaProductoController::class, 'storePlaneacion'])->name('entregas.planeacion.store');
+    Route::get('productos/{producto}/entregas/evidencia/create', [EntregaProductoController::class, 'createEvidencia'])->name('entregas.evidencia.create');
+    Route::post('productos/{producto}/entregas/evidencia', [EntregaProductoController::class, 'storeEvidencia'])->name('entregas.evidencia.store');
+    Route::get('entregas/{entregaProducto}', [EntregaProductoController::class, 'show'])->name('entregas.show');
+    Route::get('entregas/{entregaProducto}/edit', [EntregaProductoController::class, 'edit'])->name('entregas.edit');
+    Route::put('entregas/{entregaProducto}', [EntregaProductoController::class, 'update'])->name('entregas.update');
+    Route::delete('entregas/{entregaProducto}', [EntregaProductoController::class, 'destroy'])->name('entregas.destroy');
 });
 
 require __DIR__.'/settings.php';

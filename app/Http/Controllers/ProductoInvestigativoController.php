@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EntregaProducto;
 use App\Models\ProductoInvestigativo;
 use App\Models\ProyectoInvestigativo;
 use App\Models\SubTipoProducto;
@@ -103,6 +104,7 @@ class ProductoInvestigativoController extends Controller
             'resumen' => $request->resumen,
             'proyecto_investigacion_id' => $request->proyecto_investigacion_id,
             'sub_tipo_producto_id' => $request->sub_tipo_producto_id,
+            'progreso' => 0,
         ]);
 
         // Asociar usuarios
@@ -122,8 +124,16 @@ class ProductoInvestigativoController extends Controller
             abort(403, 'No tienes permisos para ver este producto.');
         }
 
+        // Cargar las entregas por separado con sus relaciones
+        $entregas = EntregaProducto::where('producto_investigativo_id', $producto->id)
+            ->with(['periodo', 'usuario'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+ 
+
         return Inertia::render('Productos/Show', [
-            'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios', 'entregas']),
+            'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios']),
+            'entregas' => $entregas,
         ]);
     }
 
@@ -212,7 +222,7 @@ class ProductoInvestigativoController extends Controller
      */
     public function destroy(ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al proyecto asociado
+        // Verificar que el usuario sea propietario del proyecto asociado
         if ($producto->proyecto->user_id !== Auth::id()) {
             abort(403, 'No tienes permisos para eliminar este producto.');
         }

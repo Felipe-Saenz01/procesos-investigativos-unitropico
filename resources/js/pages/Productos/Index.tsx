@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Eye, Edit, Trash, Plus, FileText } from 'lucide-react';
+import { Eye, Plus, FileText } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -121,17 +121,10 @@ export default function ProductosIndex({ productos }: ProductosIndexProps) {
                                                     <div className="flex items-center gap-2">
                                                         <Button asChild variant="outline" size="sm">
                                                             <Link href={route('productos.show', producto.id)}>
-                                                                <Eye className="h-4 w-4" />
+                                                                <Eye className="h-4 w-4" /> Ver
                                                             </Link>
                                                         </Button>
-                                                        <Button asChild variant="outline" size="sm">
-                                                            <Link href={route('productos.edit', producto.id)}>
-                                                                <Edit className="h-4 w-4" />
-                                                            </Link>
-                                                        </Button>
-                                                        <Button variant="outline" size="sm" disabled>
-                                                            <Trash className="h-4 w-4" />
-                                                        </Button>
+                                                                                                            
                                                     </div>
                                                 </TableCell>
                                             </TableRow>

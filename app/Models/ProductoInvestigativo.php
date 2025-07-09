@@ -19,6 +19,7 @@ class ProductoInvestigativo extends Model
         'proyecto_investigacion_id',
         'user_id',
         'sub_tipo_producto_id',
+        'progreso',
     ];
 
     // Relación con el usuario

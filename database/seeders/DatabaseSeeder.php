@@ -68,6 +68,12 @@ class DatabaseSeeder extends Seeder
                     'Acompañamientos y asesorías de línea temática del Programa Ondas',
                 ],
             ],
+            [
+                'nombre' => 'Formulación de Proyectos de Investigación',
+                'subtipos' => [
+                    'Formulación de Proyectos de Investigación',
+                ]
+            ]
         ];
 
         $gruposInvestigacion = [

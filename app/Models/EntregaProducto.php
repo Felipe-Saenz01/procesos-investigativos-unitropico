@@ -10,10 +10,22 @@ class EntregaProducto extends Model
 {
     /** @use HasFactory<\Database\Factories\EntregaProductoFactory> */
     use HasFactory;
+    
     protected $fillable = [
         'tipo',
         'planeacion',
         'evidencia',
+        'periodo_id',
+        'user_id',
+        'producto_investigativo_id',
+        'progreso_planeacion',
+        'progreso_evidencia',
+        'horas_planeacion',
+        'horas_evidencia',
+    ];
+
+    protected $casts = [
+        'planeacion' => 'array',
     ];
 
     public function periodo(): BelongsTo
@@ -28,6 +40,6 @@ class EntregaProducto extends Model
 
     public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
