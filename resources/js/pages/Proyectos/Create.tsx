@@ -11,6 +11,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert, Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { MultiSelect, type Option } from '@/components/ui/multiselect-combobox';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,8 +24,23 @@ const breadcrumbs: BreadcrumbItem[] = [
     }
 ];
 
+interface Usuario {
+    id: number;
+    name: string;
+    role: string;
+}
 
-export default function ProyectosCreate() {
+interface CreateProps {
+    usuarios: Usuario[];
+    usuarioLogueado: number;
+}
+
+export default function ProyectosCreate({ usuarios = [], usuarioLogueado }: CreateProps) {
+    // Convertir usuarios a opciones para MultiSelect
+    const usuarioOptions: Option[] = usuarios.map(u => ({ 
+        label: `${u.name} (${u.role})`, 
+        value: u.id.toString() 
+    }));
     const [tipoProyecto, setTipoProyecto] = useState<string>('en_formulacion');
     
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -41,11 +57,15 @@ export default function ProyectosCreate() {
         riesgos: '',
         bibliografia: '',
         actividades: [] as Actividad[],
+        usuarios: [usuarioLogueado.toString()] as string[],
     });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+        
         console.log('Actividades a enviar:', data.actividades);
+        console.log('Usuarios seleccionados:', data.usuarios);
+        console.log('Datos del formulario:', data);
         
         // Enviar el formulario directamente
         post(route('proyectos.store'), {
@@ -271,6 +291,17 @@ export default function ProyectosCreate() {
                                             placeholder="Ingrese la bibliografía del proyecto"
                                             className="mt-1"
                                             rows={4}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label>Usuarios del Proyecto *</Label>
+                                        <MultiSelect
+                                            options={usuarioOptions}
+                                            selected={data.usuarios}
+                                            onChange={(selected) => setData('usuarios', selected)}
+                                            placeholder="Seleccionar usuarios..."
+                                            className="mb-4"
                                         />
                                     </div>
 

@@ -33,7 +33,7 @@ interface ProyectoInvestigativo {
     estado: string;
     created_at: string;
     updated_at: string;
-    usuario: Usuario;
+    usuarios: Usuario[];
     grupos: GrupoInvestigacion[];
 }
 
@@ -64,6 +64,26 @@ export default function ProyectosIndex({ proyectos }: ProyectosProps) {
             return <span className="text-gray-400">Sin grupos asignados</span>;
         }
         return grupos.map(grupo => grupo.nombre).join(', ');
+    };
+
+    const getUsuariosText = (usuarios: Usuario[]) => {
+        if (usuarios.length === 0) {
+            return <span className="text-gray-400">Sin usuarios asignados</span>;
+        }
+        return (
+            <div className="flex flex-wrap gap-1">
+                {usuarios.slice(0, 2).map((usuario) => (
+                    <Badge key={usuario.id} variant="outline" className="text-xs">
+                        {usuario.name}
+                    </Badge>
+                ))}
+                {usuarios.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                        +{usuarios.length - 2} más
+                    </Badge>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -102,6 +122,7 @@ export default function ProyectosIndex({ proyectos }: ProyectosProps) {
                                         <TableHead className='w-1/4'>Título</TableHead>
                                         <TableHead className='w-1/6'>Eje Temático</TableHead>
                                         <TableHead className='w-1/6'>Estado</TableHead>
+                                        <TableHead className='w-1/4'>Usuarios</TableHead>
                                         <TableHead className='w-1/4'>Grupos de Investigación</TableHead>
                                         <TableHead className='w-1/4'>Acciones</TableHead>
                                     </TableRow>
@@ -113,6 +134,9 @@ export default function ProyectosIndex({ proyectos }: ProyectosProps) {
                                             <TableCell className='w-1/6'>{proyecto.eje_tematico}</TableCell>
                                             <TableCell className='w-1/6'>
                                                 {getEstadoBadge(proyecto.estado)}
+                                            </TableCell>
+                                            <TableCell className='w-1/4'>
+                                                {getUsuariosText(proyecto.usuarios)}
                                             </TableCell>
                                             <TableCell className='w-1/4'>
                                                 {getGruposText(proyecto.grupos)}

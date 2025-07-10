@@ -20,9 +20,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface Actividad {
+    id: number;
     nombre: string;
     fecha_inicio: string;
     fecha_fin: string;
+    user_id: number;
+    usuario: Usuario;
 }
 
 interface SubTipoProducto {
@@ -68,7 +71,7 @@ interface ProyectoInvestigativo {
     estado: string;
     created_at: string;
     updated_at: string;
-    usuario: Usuario;
+    usuarios: Usuario[];
     grupos: GrupoInvestigacion[];
     productos: ProductoInvestigativo[];
 }
@@ -102,7 +105,9 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                     <Eye className="h-6 w-6" />
                                     <div>
                                         <CardTitle className='text-2xl'>{proyecto.titulo}</CardTitle>
-                                        <p className="text-gray-600 mt-1">Creado por {proyecto.usuario.name}</p>
+                                        <p className="text-gray-600 mt-1">
+                                            Usuarios: {proyecto.usuarios.map(u => u.name).join(', ')}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -152,26 +157,26 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                     </CardContent>
                                 </Card>
 
-                                {/* Grupos de Investigación */}
+                                {/* Usuarios del Proyecto */}
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
                                             <Users className="h-5 w-5" />
-                                            Grupos de Investigación
+                                            Usuarios del Proyecto
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        {proyecto.grupos.length > 0 ? (
+                                        {proyecto.usuarios.length > 0 ? (
                                             <div className="space-y-2">
-                                                {proyecto.grupos.map((grupo) => (
-                                                    <div key={grupo.id} className="p-3 border rounded-lg">
-                                                        <p className="font-medium">{grupo.nombre}</p>
-                                                        <p className="text-sm text-gray-600">{grupo.email}</p>
+                                                {proyecto.usuarios.map((usuario) => (
+                                                    <div key={usuario.id} className="p-3 border rounded-lg">
+                                                        <p className="font-medium">{usuario.name}</p>
+                                                        <p className="text-sm text-gray-600">{usuario.email}</p>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <p className="text-gray-500">No hay grupos asociados</p>
+                                            <p className="text-gray-500">No hay usuarios asociados</p>
                                         )}
                                     </CardContent>
                                 </Card>
@@ -338,13 +343,16 @@ export default function ProyectoShow({ proyecto }: ProyectoShowProps) {
                                 <CardContent>
                                     {proyecto.actividades && proyecto.actividades.length > 0 ? (
                                         <div className="space-y-3">
-                                            {proyecto.actividades.map((actividad, index) => (
-                                                <div key={index} className="p-4 border rounded-lg bg-gray-50">
+                                            {proyecto.actividades.map((actividad) => (
+                                                <div key={actividad.id} className="p-4 border rounded-lg bg-gray-50">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <p className="font-medium">{actividad.nombre}</p>
                                                             <p className="text-sm text-gray-600">
-                                                                {actividad.fecha_inicio} - {actividad.fecha_fin}
+                                                                {new Date(actividad.fecha_inicio).toLocaleDateString('es-ES')} - {new Date(actividad.fecha_fin).toLocaleDateString('es-ES')}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                Creada por: {actividad.usuario.name}
                                                             </p>
                                                         </div>
                                                     </div>

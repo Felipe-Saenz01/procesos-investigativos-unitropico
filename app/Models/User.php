@@ -71,4 +71,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ProyectoInvestigativo::class);
     }
+
+    public function proyectosInvestigativos()
+    {
+        return $this->belongsToMany(ProyectoInvestigativo::class, 'user_proyecto', 'user_id', 'proyecto_investigativo_id');
+    }
 }

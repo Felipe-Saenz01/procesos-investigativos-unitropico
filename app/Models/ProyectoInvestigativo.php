@@ -41,9 +41,14 @@ class ProyectoInvestigativo extends Model
         return $this->hasMany(ProductoInvestigativo::class, 'proyecto_investigacion_id');
     }
 
-    public function usuario(): BelongsTo
+    public function usuarios(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsToMany(User::class, 'user_proyecto', 'proyecto_investigativo_id', 'user_id');
+    }
+
+    public function actividades()
+    {
+        return $this->hasMany(ActividadesProyecto::class, 'proyecto_investigativo_id');
     }
 
     public function grupos(): BelongsToMany

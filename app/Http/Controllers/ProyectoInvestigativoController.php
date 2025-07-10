@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActividadesProyecto;
 use App\Models\ProyectoInvestigativo;
 use App\Models\ProductoInvestigativo;
 use App\Models\SubTipoProducto;
 use App\Models\TipoProducto;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -18,11 +20,12 @@ class ProyectoInvestigativoController extends Controller
      */
     public function index()
     {
-        $proyectos = ProyectoInvestigativo::with(['usuario', 'grupos', 'productos'])
-            ->where('user_id', Auth::id())
+        $proyectos = ProyectoInvestigativo::with(['usuarios', 'grupos', 'productos'])
+            ->whereHas('usuarios', function($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->orderBy('created_at', 'desc')
             ->get();
-
         return Inertia::render('Proyectos/Index', [
             'proyectos' => $proyectos,
         ]);
@@ -33,7 +36,11 @@ class ProyectoInvestigativoController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Proyectos/Create');
+        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        return Inertia::render('Proyectos/Create', [
+            'usuarios' => $usuarios,
+            'usuarioLogueado' => Auth::id(),
+        ]);
     }
 
     /**
@@ -41,7 +48,7 @@ class ProyectoInvestigativoController extends Controller
      */
     public function store(Request $request)
     {
-        // return $request;
+
         $request->validate([
             'titulo' => 'required|string|max:255',
             'eje_tematico' => 'required|string|max:255',
@@ -56,6 +63,8 @@ class ProyectoInvestigativoController extends Controller
             'resultados' => $request->tipo_proyecto === 'formulado' ? 'required|string' : 'nullable|string',
             'riesgos' => $request->tipo_proyecto === 'formulado' ? 'required|string' : 'nullable|string',
             'bibliografia' => $request->tipo_proyecto === 'formulado' ? 'required|string' : 'nullable|string',
+            'usuarios' => 'required|array|min:1',
+            'usuarios.*' => 'exists:users,id',
             'actividades' => 'nullable|array',
         ], [
             'titulo.required' => 'El título es requerido.',
@@ -78,9 +87,7 @@ class ProyectoInvestigativoController extends Controller
         // Preparar los datos del proyecto
         $proyectoData = [
             'titulo' => $request->titulo,
-            'user_id' => Auth::id(),
             'eje_tematico' => $request->eje_tematico,
-            'actividades' => $request->actividades,
             'estado' => $estado,
         ];
 
@@ -109,6 +116,23 @@ class ProyectoInvestigativoController extends Controller
         }
 
         $proyecto = ProyectoInvestigativo::create($proyectoData);
+
+        // Asociar usuarios seleccionados
+        
+        $proyecto->usuarios()->sync($request->usuarios);
+
+        // Guardar actividades (solo para el usuario logueado)
+        if ($request->has('actividades')) {
+            foreach ($request->actividades as $actividad) {
+                ActividadesProyecto::create([
+                    'proyecto_investigativo_id' => $proyecto->id,
+                    'user_id' => Auth::id(),
+                    'nombre' => $actividad['nombre'],
+                    'fecha_inicio' => $actividad['fecha_inicio'],
+                    'fecha_fin' => $actividad['fecha_fin'],
+                ]);
+            }
+        }
 
         // Establecer la relación con el grupo de investigación del usuario
         $usuario = Auth::user();
@@ -164,13 +188,13 @@ class ProyectoInvestigativoController extends Controller
      */
     public function show(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda ver sus propios proyectos
-        if ($proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario solo pueda ver proyectos donde esté asociado
+        if (!$proyecto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para ver este proyecto.');
         }
 
         return Inertia::render('Proyectos/Show', [
-            'proyecto' => $proyecto->load(['usuario', 'grupos', 'productos.subTipoProducto']),
+            'proyecto' => $proyecto->load(['usuarios', 'grupos', 'productos.subTipoProducto', 'actividades.usuario']),
         ]);
     }
 
@@ -179,13 +203,23 @@ class ProyectoInvestigativoController extends Controller
      */
     public function edit(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda editar sus propios proyectos
-        if ($proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario solo pueda editar proyectos donde esté asociado
+        if (!$proyecto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para editar este proyecto.');
         }
 
+        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        $usuariosSeleccionados = $proyecto->usuarios->pluck('id')->toArray();
+        
+        // Cargar solo las actividades del usuario logueado
+        $actividadesUsuario = $proyecto->actividades()->where('user_id', Auth::id())->get();
+
         return Inertia::render('Proyectos/Edit', [
-            'proyecto' => $proyecto,
+            'proyecto' => $proyecto->load(['usuarios', 'grupos']),
+            'usuarios' => $usuarios,
+            'usuariosSeleccionados' => $usuariosSeleccionados,
+            'usuarioLogueado' => Auth::id(),
+            'actividadesUsuario' => $actividadesUsuario,
         ]);
     }
 
@@ -194,8 +228,8 @@ class ProyectoInvestigativoController extends Controller
      */
     public function update(Request $request, ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda actualizar sus propios proyectos
-        if ($proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario solo pueda actualizar proyectos donde esté asociado
+        if (!$proyecto->usuarios()->where('user_id', Auth::id())->exists()) {
             abort(403, 'No tienes permisos para actualizar este proyecto.');
         }
 
@@ -211,6 +245,8 @@ class ProyectoInvestigativoController extends Controller
             'resultados' => 'required|string',
             'riesgos' => 'required|string',
             'bibliografia' => 'required|string',
+            'usuarios' => 'required|array|min:1',
+            'usuarios.*' => 'exists:users,id',
             'actividades' => 'nullable|array',
         ], [
             'titulo.required' => 'El título es requerido.',
@@ -242,6 +278,9 @@ class ProyectoInvestigativoController extends Controller
             'estado' => 'Formulado',
         ]);
 
+        // Actualizar usuarios asociados
+        $proyecto->usuarios()->sync($request->usuarios);
+
         // Asegurar que la relación con el grupo de investigación se mantenga
         $usuario = Auth::user();
         if ($usuario->grupo_investigacion_id && !$proyecto->grupos()->where('grupo_investigacion_id', $usuario->grupo_investigacion_id)->exists()) {
@@ -256,8 +295,8 @@ class ProyectoInvestigativoController extends Controller
      */
     public function destroy(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda eliminar sus propios proyectos
-        if ($proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario solo pueda eliminar proyectos donde esté asociado
+        if (!$proyecto->usuarios()->where('user_id', Auth::id())->exists()) {
             abort(403, 'No tienes permisos para eliminar este proyecto.');
         }
         
@@ -265,7 +304,9 @@ class ProyectoInvestigativoController extends Controller
         if ($proyecto->productos()->count() > 0) {
             return to_route('proyectos.index')->with('error', 'No se puede eliminar el proyecto porque tiene productos investigativos asociados.');
         }
-        // Borrar la relacion del proyecto con los grupos de investigacion
+        
+        // Borrar las relaciones del proyecto
+        $proyecto->usuarios()->detach();
         $proyecto->grupos()->detach();
 
         $proyecto->delete();

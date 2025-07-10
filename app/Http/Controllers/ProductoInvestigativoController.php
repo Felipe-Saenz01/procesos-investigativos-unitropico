@@ -19,7 +19,7 @@ class ProductoInvestigativoController extends Controller
     public function index()
     {
         $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto', 'usuarios'])
-            ->whereHas('proyecto', function ($query) {
+            ->whereHas('proyecto.usuarios', function ($query) {
                 $query->where('user_id', Auth::id());
             })
             ->orderBy('created_at', 'desc')
@@ -37,8 +37,10 @@ class ProductoInvestigativoController extends Controller
     public function create()
     {
         // Obtener proyectos del usuario logueado
-        $proyectos = ProyectoInvestigativo::where('user_id', Auth::id())
-            ->where('estado', 'Formulado')
+        $proyectos = ProyectoInvestigativo::where('estado', 'Formulado')
+            ->whereHas('usuarios', function ($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->get(['id', 'titulo']);
 
         if ($proyectos->isEmpty()) {
@@ -70,6 +72,7 @@ class ProductoInvestigativoController extends Controller
      */
     public function store(Request $request)
     {
+        return $request;
         $request->validate([
             'titulo' => 'required|string|max:255',
             'resumen' => 'required|string',

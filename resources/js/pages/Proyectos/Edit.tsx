@@ -10,6 +10,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert, FileText } from 'lucide-react';
 import { FormEvent } from 'react';
+import { MultiSelect, type Option } from '@/components/ui/multiselect-combobox';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -21,6 +22,12 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/proyectos/edit',
     }
 ];
+
+interface Usuario {
+    id: number;
+    name: string;
+    role: string;
+}
 
 interface ProyectoInvestigativo {
     id: number;
@@ -37,13 +44,38 @@ interface ProyectoInvestigativo {
     bibliografia: string | null;
     actividades: Actividad[];
     estado: string;
+    usuarios: Usuario[];
+}
+
+interface ActividadUsuario {
+    id: number;
+    nombre: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    user_id: number;
 }
 
 interface ProyectoEditProps {
     proyecto: ProyectoInvestigativo;
+    usuarios: Usuario[];
+    usuariosSeleccionados: number[];
+    actividadesUsuario: ActividadUsuario[];
 }
 
-export default function ProyectoEdit({ proyecto }: ProyectoEditProps) {
+export default function ProyectoEdit({ proyecto, usuarios, usuariosSeleccionados, actividadesUsuario }: ProyectoEditProps) {
+    // Convertir usuarios a opciones para MultiSelect
+    const usuarioOptions: Option[] = usuarios.map(u => ({ 
+        label: `${u.name} (${u.role})`, 
+        value: u.id.toString() 
+    }));
+    
+    // Convertir actividades del usuario a formato esperado por ActividadesProyecto
+    const actividadesFormateadas = actividadesUsuario.map(act => ({
+        nombre: act.nombre,
+        fecha_inicio: act.fecha_inicio,
+        fecha_fin: act.fecha_fin
+    }));
+    
     const { data, setData, put, processing, errors } = useForm({
         titulo: proyecto.titulo,
         eje_tematico: proyecto.eje_tematico,
@@ -56,12 +88,14 @@ export default function ProyectoEdit({ proyecto }: ProyectoEditProps) {
         resultados: proyecto.resultados || '',
         riesgos: proyecto.riesgos || '',
         bibliografia: proyecto.bibliografia || '',
-        actividades: proyecto.actividades || [],
-    } as any);
+        actividades: actividadesFormateadas,
+        usuarios: usuariosSeleccionados.map(id => id.toString()),
+    });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         console.log('Actividades a enviar:', data.actividades);
+        console.log('Usuarios seleccionados:', data.usuarios);
         
         // Enviar el formulario directamente
         put(route('proyectos.update', proyecto.id));
@@ -231,6 +265,17 @@ export default function ProyectoEdit({ proyecto }: ProyectoEditProps) {
                                         placeholder="Ingrese la bibliografía del proyecto"
                                         className="mt-1"
                                         rows={4}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label>Usuarios del Proyecto *</Label>
+                                    <MultiSelect
+                                        options={usuarioOptions}
+                                        selected={data.usuarios}
+                                        onChange={(selected) => setData('usuarios', selected)}
+                                        placeholder="Seleccionar usuarios..."
+                                        className="mb-4"
                                     />
                                 </div>
 
