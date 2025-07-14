@@ -7,8 +7,9 @@ import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { CircleAlert, ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { FormEvent, useEffect } from 'react';
+import { CircleAlert, AlertTriangle } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -16,7 +17,11 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/productos',
     },
     {
-        title: 'Entrega de Evidencia',
+        title: 'Entregas',
+        href: '#',
+    },
+    {
+        title: 'Evidencia',
         href: '#',
     }
 ];
@@ -40,6 +45,12 @@ interface Periodo {
     horas_disponibles: number;
 }
 
+interface Elemento {
+    id: number;
+    nombre: string;
+    progreso: number;
+}
+
 interface Entrega {
     id: number;
     tipo: 'planeacion' | 'evidencia';
@@ -59,12 +70,13 @@ interface EvidenciaCreateProps {
     producto: Producto;
     periodo: Periodo;
     planeacion: { nombre: string; porcentaje: number }[];
+    elementos: Elemento[];
     horasPlaneacion: number;
     progresoPlaneacion: number;
     entregasExistentes: Entrega[];
 }
 
-export default function EvidenciaCreate({ producto, periodo, planeacion, horasPlaneacion, progresoPlaneacion, entregasExistentes }: EvidenciaCreateProps) {
+export default function EvidenciaCreate({ producto, periodo, planeacion, elementos, horasPlaneacion, progresoPlaneacion, entregasExistentes }: EvidenciaCreateProps) {
     // Solo permitir acceso si existe planeación
     const planeacionExistente = entregasExistentes.find(e => e.tipo === 'planeacion');
     const evidenciaExistente = entregasExistentes.find(e => e.tipo === 'evidencia');
@@ -243,43 +255,52 @@ export default function EvidenciaCreate({ producto, periodo, planeacion, horasPl
                                 <div>
                                     <Label className="text-base font-medium">Elementos de Planeación y Avance *</Label>
                                     <div className="space-y-4 mt-4">
-                                        {planeacion.map((item, index) => (
-                                            <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                                                <div className="flex-1 ">
-                                                    <Label>Actividad/Elemento</Label>
-                                                    <Input
-                                                        type="text"
-                                                        value={item.nombre}
-                                                        disabled
-                                                        className="mt-1 bg-gray-100"
-                                                    />
+                                        {planeacion.map((item, index) => {
+                                            // Buscar el elemento correspondiente para mostrar el progreso actual
+                                            const elemento = elementos.find(e => e.nombre === item.nombre);
+                                            return (
+                                                <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                                                    <div className="flex-1">
+                                                        <Label>Elemento del Producto</Label>
+                                                        <Input
+                                                            type="text"
+                                                            value={item.nombre}
+                                                            disabled
+                                                            className="mt-1 bg-gray-100"
+                                                        />
+                                                        {elemento && (
+                                                            <p className="text-sm text-blue-600 mt-1">
+                                                                Progreso actual: {elemento.progreso}%
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="">
+                                                        <Label>Porcentaje Planeado</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.porcentaje}
+                                                            disabled
+                                                            className="mt-1 bg-gray-100"
+                                                        />
+                                                    </div>
+                                                    <div className="">
+                                                        <Label>Porcentaje Completado</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            value={data.porcentaje_completado[index]}
+                                                            onChange={e => {
+                                                                const nuevos = [...data.porcentaje_completado];
+                                                                nuevos[index] = parseInt(e.target.value) || 0;
+                                                                setData('porcentaje_completado', nuevos);
+                                                            }}
+                                                            className="mt-1"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="">
-                                                    <Label>Porcentaje Planeado</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={item.porcentaje}
-                                                        disabled
-                                                        className="mt-1 bg-gray-100"
-                                                    />
-                                                </div>
-                                                <div className="">
-                                                    <Label>Porcentaje Completado</Label>
-                                                    <Input
-                                                        type="number"
-                                                        min="0"
-                                                        max="100"
-                                                        value={data.porcentaje_completado[index]}
-                                                        onChange={e => {
-                                                            const nuevos = [...data.porcentaje_completado];
-                                                            nuevos[index] = parseInt(e.target.value) || 0;
-                                                            setData('porcentaje_completado', nuevos);
-                                                        }}
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>

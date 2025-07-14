@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ElementosProducto;
 use App\Models\EntregaProducto;
 use App\Models\HorasInvestigacion;
 use App\Models\Periodo;
@@ -289,9 +290,17 @@ class EntregaProductoController extends Controller
         if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para crear entregas para este producto.');
         }
+        // Verificar que el producto tenga elementos definidos
+        $elementos = $producto->elementos()->orderBy('nombre')->get();
+        if ($elementos->isEmpty()) {
+            return to_route('productos.show', $producto->id)->with('error', 'El producto debe tener al menos un elemento definido antes de crear entregas.');
+        }
         
         // Obtener periodos activos
         $periodos = Periodo::where('estado', 'Activo')->get();
+        if ($periodos->isEmpty()) {
+            return to_route('productos.show', $producto->id)->with('error', 'No hay períodos activos para crear planeación.');
+        }
 
         // Calcular horas disponibles para cada período
         $periodosConHoras = $periodos->map(function ($periodo) {
@@ -303,6 +312,7 @@ class EntregaProductoController extends Controller
 
             // Obtener las horas ya utilizadas en entregas del usuario en el período
             $horasUtilizadas = EntregaProducto::where('user_id', Auth::id())
+                ->where('tipo', 'planeacion')
                 ->where('periodo_id', $periodo->id)
                 ->sum('horas_planeacion');
 
@@ -318,12 +328,12 @@ class EntregaProductoController extends Controller
             ];
         });
 
-
         $entregasExistentes = $producto->entregas()->with('periodo')->get();
         
         return Inertia::render('Productos/Entregas/PlaneacionCreate', [
             'producto' => $producto->load(['proyecto', 'subTipoProducto']),
             'periodos' => $periodosConHoras,
+            'elementos' => $elementos,
             'entregasExistentes' => $entregasExistentes,
         ]);
     }
@@ -340,17 +350,18 @@ class EntregaProductoController extends Controller
         $request->validate([
             'periodo_id' => 'required|exists:periodos,id',
             'planeacion' => 'required|array|min:1',
-            'planeacion.*.nombre' => 'required|string|max:255',
+            'planeacion.*.elemento_id' => 'required|exists:elementos_productos,id',
             'planeacion.*.porcentaje' => 'required|numeric|min:0|max:100',
             'progreso_planeacion' => 'required|integer|min:0|max:100',
             'horas_planeacion' => 'required|integer|min:1',
         ], [
-            'periodo_id.required' => 'Debe seleccionar un período.',
+            'periodo_id.required' => 'El período es requerido.',
             'periodo_id.exists' => 'El período seleccionado no existe.',
-            'planeacion.required' => 'La planificación es requerida.',
-            'planeacion.array' => 'La planificación debe ser una lista.',
-            'planeacion.min' => 'Debe agregar al menos un elemento de planificación.',
-            'planeacion.*.nombre.required' => 'El nombre del elemento es requerido.',
+            'planeacion.required' => 'Los elementos de planeación son requeridos.',
+            'planeacion.array' => 'Los elementos deben ser una lista.',
+            'planeacion.min' => 'Debe agregar al menos un elemento de planeación.',
+            'planeacion.*.elemento_id.required' => 'El elemento es requerido.',
+            'planeacion.*.elemento_id.exists' => 'El elemento seleccionado no existe.',
             'planeacion.*.porcentaje.required' => 'El porcentaje es requerido.',
             'planeacion.*.porcentaje.numeric' => 'El porcentaje debe ser un número.',
             'planeacion.*.porcentaje.min' => 'El porcentaje no puede ser menor a 0.',
@@ -363,46 +374,46 @@ class EntregaProductoController extends Controller
             'horas_planeacion.integer' => 'Las horas deben ser un número entero.',
             'horas_planeacion.min' => 'Las horas deben ser al menos 1.',
         ]);
-        
-        $periodo = Periodo::findOrFail($request->periodo_id);
+
+        // Verificar que no exista ya una entrega de planeación
         $entregasExistentes = $producto->entregas()->where('periodo_id', $request->periodo_id)->get();
         $planeacionExistente = $entregasExistentes->where('tipo', 'planeacion')->first();
         
         if ($planeacionExistente) {
-            return back()->withErrors(['tipo' => 'Ya existe una entrega de planeación para este período.']);
+            return back()->withErrors(['periodo_id' => 'Ya existe una entrega de planeación para este período.']);
         }
 
         // Validar horas disponibles del usuario en el período
-        // Obtener las horas asignadas al usuario en el período
-        $horasAsignadas = HorasInvestigacion::where('user_id', Auth::id())
-            ->where('periodo_id', $request->periodo_id)
-            ->where('estado', 'Activo')
-            ->sum('horas');
-
-        // Obtener las horas ya utilizadas en entregas del usuario en el período
-        $horasUtilizadas = EntregaProducto::where('user_id', Auth::id())
-            ->where('periodo_id', $request->periodo_id)
-            ->sum('horas_planeacion');
-
-        $horasDisponibles = $horasAsignadas - $horasUtilizadas;
-
+        $horasDisponibles = $this->getHorasDisponiblesUsuario(Auth::id(), $request->periodo_id);
+        
         if ($request->horas_planeacion > $horasDisponibles) {
             return back()->withErrors(['horas_planeacion' => "No tienes suficientes horas disponibles. Tienes {$horasDisponibles} horas y solicitas {$request->horas_planeacion} horas."]);
         }
 
-        EntregaProducto::create([
+        // Convertir los IDs de elementos a nombres para almacenar en la planeación
+        $planeacionConNombres = collect($request->planeacion)->map(function ($item) {
+            $elemento = ElementosProducto::find($item['elemento_id']);
+            return [
+                'nombre' => $elemento->nombre,
+                'porcentaje' => $item['porcentaje']
+            ];
+        })->toArray();
+
+        // Crear la entrega
+        $entrega = EntregaProducto::create([
             'tipo' => 'planeacion',
-            'planeacion' => $request->planeacion,
+            'planeacion' => $planeacionConNombres,
             'periodo_id' => $request->periodo_id,
             'user_id' => Auth::id(),
             'producto_investigativo_id' => $producto->id,
+            'evidencia' => null,
             'progreso_planeacion' => $request->progreso_planeacion,
             'progreso_evidencia' => 0,
             'horas_planeacion' => $request->horas_planeacion,
-            'horas_evidencia' => $request->horas_planeacion,
+            'horas_evidencia' => 0,
         ]);
-        
-        return to_route('productos.show', $producto)->with('success', 'Planeación registrada exitosamente.');
+
+        return to_route('productos.show', $producto)->with('success', 'Planeación creada exitosamente.');
     }
 
     /**
@@ -412,6 +423,12 @@ class EntregaProductoController extends Controller
     {
         if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para crear entregas para este producto.');
+        }
+        
+        // Verificar que el producto tenga elementos definidos
+        $elementos = $producto->elementos()->orderBy('nombre')->get();
+        if ($elementos->isEmpty()) {
+            return to_route('productos.show', $producto->id)->with('error', 'El producto debe tener al menos un elemento definido antes de crear entregas.');
         }
         
         // Buscar la planeación existente más reciente
@@ -438,6 +455,7 @@ class EntregaProductoController extends Controller
             'producto' => $producto->load(['proyecto', 'subTipoProducto']),
             'periodo' => $periodoConHoras,
             'planeacion' => $planeacion->planeacion,
+            'elementos' => $elementos,
             'horasPlaneacion' => $planeacion->horas_planeacion,
             'progresoPlaneacion' => $planeacion->progreso_planeacion,
             'entregasExistentes' => $entregasExistentes,
@@ -482,27 +500,38 @@ class EntregaProductoController extends Controller
         $evidenciaExistente = $entregasExistentes->where('tipo', 'evidencia')->first();
         
         if ($evidenciaExistente) {
-            return back()->withErrors(['tipo' => 'Ya existe una entrega de evidencia para este período.']);
+            return back()->withErrors(['general' => 'Ya existe una entrega de evidencia para este período.']);
         }
 
-        // Guardar la evidencia usando las horas de planeación
+        // Crear la evidencia con los mismos elementos de la planeación
+        $evidencia = $planeacion->planeacion;
+        foreach ($request->porcentaje_completado as $index => $porcentaje) {
+            if (isset($evidencia[$index])) {
+                $evidencia[$index]['completado'] = $porcentaje;
+            }
+        }
+
+        // Crear la entrega de evidencia
         $entrega = EntregaProducto::create([
             'tipo' => 'evidencia',
-            'planeacion' => $planeacion->planeacion,
-            'evidencia' => json_encode($request->porcentaje_completado),
+            'planeacion' => $evidencia,
             'periodo_id' => $periodo->id,
             'user_id' => Auth::id(),
             'producto_investigativo_id' => $producto->id,
-            'progreso_planeacion' => $planeacion->progreso_planeacion ?? 0,
+            'evidencia' => null,
+            'progreso_planeacion' => $planeacion->progreso_planeacion,
             'progreso_evidencia' => $request->progreso_evidencia,
-            'horas_planeacion' => $planeacion->horas_planeacion ?? 0,
-            'horas_evidencia' => $planeacion->horas_planeacion ?? 0, // Usar las horas de planeación
+            'horas_planeacion' => $planeacion->horas_planeacion,
+            'horas_evidencia' => $request->horas_evidencia ?? 0,
         ]);
 
-        // Actualizar el progreso del producto
+        // Actualizar el progreso de los elementos del producto
+        $this->actualizarProgresoElementos($producto->id, $planeacion->planeacion, $request->porcentaje_completado);
+
+        // Actualizar el progreso general del producto
         $this->actualizarProgresoProducto($producto->id);
 
-        return to_route('productos.show', $producto)->with('success', 'Evidencia registrada exitosamente.');
+        return to_route('productos.show', $producto)->with('success', 'Evidencia creada exitosamente.');
     }
 
     /**
@@ -512,12 +541,13 @@ class EntregaProductoController extends Controller
     {
         // Obtener las horas asignadas al usuario en el período
         $horasAsignadas = HorasInvestigacion::where('user_id', $userId)
-            ->where('periodo_id', $periodoId)
+            // ->where('periodo_id', $periodoId)
             ->where('estado', 'Activo')
-            ->get('horas');
+            ->sum('horas');
 
         // Obtener las horas ya utilizadas en entregas del usuario en el período
         $horasUtilizadas = EntregaProducto::where('user_id', $userId)
+            ->where('tipo', 'planeacion')
             ->where('periodo_id', $periodoId)
             ->sum('horas_planeacion');
 
@@ -547,5 +577,25 @@ class EntregaProductoController extends Controller
         ProductoInvestigativo::where('id', $productoId)->update([
             'progreso' => $progresoPromedio
         ]);
+    }
+
+    /**
+     * Actualizar el progreso de los elementos del producto
+     */
+    private function actualizarProgresoElementos($productoId, $planeacion, $porcentajesCompletados)
+    {
+        foreach ($planeacion as $index => $item) {
+            if (isset($porcentajesCompletados[$index])) {
+                $elemento = ElementosProducto::where('producto_investigativo_id', $productoId)
+                    ->where('nombre', $item['nombre'])
+                    ->first();
+                
+                if ($elemento) {
+                    $elemento->update([
+                        'progreso' => $porcentajesCompletados[$index]
+                    ]);
+                }
+            }
+        }
     }
 }

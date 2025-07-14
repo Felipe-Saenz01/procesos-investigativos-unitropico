@@ -44,4 +44,10 @@ class ProductoInvestigativo extends Model
     {
         return $this->hasMany(EntregaProducto::class);
     }
+
+    // Relación con los elementos del producto
+    public function elementos(): HasMany
+    {
+        return $this->hasMany(ElementosProducto::class, 'producto_investigativo_id');
+    }
 }

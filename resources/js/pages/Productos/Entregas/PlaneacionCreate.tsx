@@ -4,12 +4,13 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { SearchSelect } from '@/components/form-search-select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { CircleAlert, Plus, Minus, ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Minus, Plus } from 'lucide-react';
 import { FormEvent } from 'react';
+import { CircleAlert, AlertTriangle } from 'lucide-react';
+import { SearchSelect } from '@/components/form-search-select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -17,7 +18,11 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/productos',
     },
     {
-        title: 'Entrega de Planeación',
+        title: 'Entregas',
+        href: '#',
+    },
+    {
+        title: 'Planeación',
         href: '#',
     }
 ];
@@ -43,6 +48,12 @@ interface Periodo {
     fecha_limite_evidencia: string;
 }
 
+interface Elemento {
+    id: number;
+    nombre: string;
+    progreso: number;
+}
+
 interface Entrega {
     id: number;
     tipo: 'planeacion' | 'evidencia';
@@ -60,15 +71,16 @@ interface Producto {
 interface PlaneacionCreateProps {
     producto: Producto;
     periodos: Periodo[];
+    elementos: Elemento[];
     entregasExistentes: Entrega[];
 }
 
-export default function PlaneacionCreate({ producto, periodos, entregasExistentes }: PlaneacionCreateProps) {
+export default function PlaneacionCreate({ producto, periodos, elementos, entregasExistentes }: PlaneacionCreateProps) {
     // Si ya existe una entrega de planeación, no permitir acceso
     const planeacionExistente = entregasExistentes.find(e => e.tipo === 'planeacion');
     const { data, setData, post, processing, errors, reset } = useForm({
         periodo_id: '',
-        planeacion: [{ nombre: '', porcentaje: 0 }],
+        planeacion: [{ elemento_id: '', porcentaje: 0 }],
         progreso_planeacion: 0,
         horas_planeacion: 1,
     });
@@ -83,7 +95,7 @@ export default function PlaneacionCreate({ producto, periodos, entregasExistente
     };
 
     const addPlaneacionItem = () => {
-        setData('planeacion', [...data.planeacion, { nombre: '', porcentaje: 0 }]);
+        setData('planeacion', [...data.planeacion, { elemento_id: '', porcentaje: 0 }]);
     };
 
     const removePlaneacionItem = (index: number) => {
@@ -93,7 +105,7 @@ export default function PlaneacionCreate({ producto, periodos, entregasExistente
         }
     };
 
-    const updatePlaneacionItem = (index: number, field: 'nombre' | 'porcentaje', value: string | number) => {
+    const updatePlaneacionItem = (index: number, field: 'elemento_id' | 'porcentaje', value: string | number) => {
         const newPlaneacion = [...data.planeacion];
         newPlaneacion[index] = { ...newPlaneacion[index], [field]: value };
         setData('planeacion', newPlaneacion);
@@ -105,6 +117,24 @@ export default function PlaneacionCreate({ producto, periodos, entregasExistente
         value: periodo.id.toString()
     }));
 
+    // Convertir elementos a opciones para SearchSelect
+    const elementoOptions = elementos.map(elemento => ({
+        label: `${elemento.nombre} (${elemento.progreso}% progreso)`,
+        value: elemento.id.toString()
+    }));
+
+    // Función para obtener opciones de elementos filtradas por índice
+    const getElementoOptionsForIndex = (currentIndex: number) => {
+        const elementosSeleccionados = data.planeacion
+            .map((item, index) => ({ elemento_id: item.elemento_id, index }))
+            .filter(item => item.elemento_id && item.index !== currentIndex)
+            .map(item => item.elemento_id);
+
+        return elementoOptions.filter(option => 
+            !elementosSeleccionados.includes(option.value)
+        );
+    };
+
     if (planeacionExistente) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
@@ -114,7 +144,7 @@ export default function PlaneacionCreate({ producto, periodos, entregasExistente
                         <CircleAlert />
                         <AlertTitle>Ya existe una entrega de planeación para este producto.</AlertTitle>
                         <AlertDescription>
-                            Solo puedes registrar una planeación por período. Si deseas registrar evidencia, utiliza el formulario correspondiente.
+                            No puedes crear múltiples entregas de planeación para el mismo producto.
                         </AlertDescription>
                         <Button asChild className="mt-4">
                             <Link href={route('productos.show', producto.id)}>Volver al producto</Link>
@@ -272,14 +302,13 @@ export default function PlaneacionCreate({ producto, periodos, entregasExistente
                                     <div className="space-y-4">
                                         {data.planeacion.map((item, index) => (
                                             <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                                                <div className="flex-1 ">
-                                                    <Label htmlFor={`nombre-${index}`}>Actividad/Elemento</Label>
-                                                    <Input
-                                                        id={`nombre-${index}`}
-                                                        type="text"
-                                                        value={item.nombre}
-                                                        onChange={(e) => updatePlaneacionItem(index, 'nombre', e.target.value)}
-                                                        placeholder="Descripción de la actividad"
+                                                <div className="flex-1">
+                                                    <Label htmlFor={`elemento-${index}`}>Elemento del Producto</Label>
+                                                    <SearchSelect
+                                                        options={getElementoOptionsForIndex(index)}
+                                                        value={item.elemento_id}
+                                                        onValueChange={(value) => updatePlaneacionItem(index, 'elemento_id', String(value))}
+                                                        placeholder="Seleccionar elemento..."
                                                         className="mt-1"
                                                     />
                                                 </div>

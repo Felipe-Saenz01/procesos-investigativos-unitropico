@@ -72,7 +72,6 @@ class ProductoInvestigativoController extends Controller
      */
     public function store(Request $request)
     {
-        return $request;
         $request->validate([
             'titulo' => 'required|string|max:255',
             'resumen' => 'required|string',

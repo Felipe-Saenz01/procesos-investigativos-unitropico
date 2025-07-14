@@ -72,8 +72,6 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
         });
     };
 
@@ -82,7 +80,7 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
     };
 
     const getTipoDescription = (tipo: string) => {
-        return tipo === 'planeacion' 
+        return tipo === 'planeacion'
             ? 'Planificación de actividades y porcentajes esperados'
             : 'Evidencia del avance realizado según la planificación';
     };
@@ -134,17 +132,10 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
 
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <span className="font-medium text-gray-500">Creada:</span>
+                                        <span className="font-medium text-gray-500">Fecha de entrega:</span>
                                         <p className="flex items-center gap-1 mt-1">
                                             <Calendar className="h-3 w-3" />
                                             {formatDate(entrega.created_at)}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium text-gray-500">Última actualización:</span>
-                                        <p className="flex items-center gap-1 mt-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {formatDate(entrega.updated_at)}
                                         </p>
                                     </div>
                                 </div>
@@ -161,15 +152,15 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    <div>
+                                    <div className="flex items-center gap-2">
                                         <h4 className="font-medium">{entrega.periodo.nombre}</h4>
-                                        <p className="text-sm text-gray-500">
-                                            {formatDate(entrega.periodo.fecha_limite_planeacion)} - {formatDate(entrega.periodo.fecha_limite_evidencias)}
-                                        </p>
+                                        <Badge variant={entrega.periodo.estado === 'Activo' ? 'default' : 'secondary'}>
+                                            {entrega.periodo.estado}
+                                        </Badge>
                                     </div>
-                                    <Badge variant={entrega.periodo.estado === 'Activo' ? 'default' : 'secondary'}>
-                                        {entrega.periodo.estado}
-                                    </Badge>
+                                    <p className="text-sm text-gray-600">
+                                        Entrega planeación: {formatDate(entrega.periodo.fecha_limite_planeacion)} - Entrega evidencia: {formatDate(entrega.periodo.fecha_limite_evidencias)}
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>

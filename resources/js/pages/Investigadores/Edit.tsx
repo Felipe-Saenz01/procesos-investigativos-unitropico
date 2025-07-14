@@ -32,7 +32,7 @@ interface Investigador {
     name: string;
     email: string;
     role: string;
-    grupo_investigacion_id: number;
+    grupo_investigacion_id: number | null;
 }
 
 interface InvestigadorEditProps {

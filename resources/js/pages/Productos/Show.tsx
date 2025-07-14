@@ -213,6 +213,31 @@ export default function ProductosShow({ producto, entregas }: ProductosShowProps
                                         </div>
                                     </div>
 
+                                    <Separator />
+
+                                    {/* Elementos del producto */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-medium">Elementos del Producto</h4>
+                                            <Button asChild size="sm" variant="outline">
+                                                <Link href={`/productos/${producto.id}/elementos`}>
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Gestionar Elementos
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                        <div className="p-3 border rounded-lg">
+                                            <p className="text-sm text-gray-500 mb-2">
+                                                Los elementos definen los componentes específicos que conforman este producto investigativo.
+                                            </p>
+                                            <Button asChild size="sm" variant="outline">
+                                                <Link href={`/productos/${producto.id}/elementos`}>
+                                                    Ver Elementos
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    </div>
+
 
                                 </CardContent>
                             </Card>

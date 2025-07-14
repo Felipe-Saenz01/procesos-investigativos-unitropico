@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ElementosProductoController;
 use App\Http\Controllers\EntregaProductoController;
 use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
@@ -44,6 +45,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Rutas para Productos Investigativos
     Route::resource('productos', ProductoInvestigativoController::class);
+
+    // Rutas para Elementos de Productos
+    Route::resource('productos.elementos', ElementosProductoController::class);
 
     // Rutas para Entregas de Productos
     Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');
