@@ -12,17 +12,6 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert, FileText } from 'lucide-react';
 import { FormEvent } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Productos Investigativos',
-        href: '/productos',
-    },
-    {
-        title: 'Editar Producto',
-        href: '/productos/edit',
-    }
-];
-
 interface Proyecto {
     id: number;
     titulo: string;
@@ -57,11 +46,22 @@ interface ProductosEditProps {
 }
 
 export default function ProductosEdit({ producto, proyectos, subTipos, usuarios }: ProductosEditProps) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Productos Investigativos',
+            href: '/productos',
+        },
+        {
+            title: 'Editar Producto',
+            href: `/productos/${producto.id}/edit`,
+        }
+    ];
+
     const { data, setData, put, processing, errors } = useForm({
         titulo: producto.titulo,
         resumen: producto.resumen,
-        proyecto_investigacion_id: producto.proyecto_investigacion_id.toString(),
-        sub_tipo_producto_id: producto.sub_tipo_producto_id.toString(),
+        proyecto_investigacion_id: producto.proyecto_investigacion_id?.toString() || '',
+        sub_tipo_producto_id: producto.sub_tipo_producto_id?.toString() || '',
         usuarios: producto.usuarios.map(u => u.id.toString()),
     });
 

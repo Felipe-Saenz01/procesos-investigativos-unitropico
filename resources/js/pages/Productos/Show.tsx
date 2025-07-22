@@ -10,7 +10,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Edit, FileText, Users, ArrowLeft, Plus, Eye, Trash2 } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, CircleAlert } from 'lucide-react';
+import { CircleAlert } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -79,13 +79,33 @@ interface ProductoInvestigativo {
     usuarios: Usuario[];
 }
 
-interface ProductosShowProps {
-    producto: ProductoInvestigativo;
-    entregas: Entrega[];
+interface PeriodoEntrega {
+    id: number;
+    nombre: string;
+    fecha_limite_planeacion: string;
+    fecha_limite_evidencias: string;
+    estado: string;
+    planeacion: null | {
+        id: number;
+        estado: string;
+        usuario: { id: number; name: string };
+        created_at: string;
+    };
+    evidencia: null | {
+        id: number;
+        estado: string;
+        usuario: { id: number; name: string };
+        created_at: string;
+    };
 }
 
-export default function ProductosShow({ producto, entregas }: ProductosShowProps) {
-    const { errors, flash } = usePage().props as any;
+interface ProductosShowProps {
+    producto: ProductoInvestigativo;
+    periodos: PeriodoEntrega[];
+}
+
+export default function ProductosShow({ producto, periodos }: ProductosShowProps) {
+    const { flash } = usePage().props as any;
     
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', {
@@ -273,155 +293,104 @@ export default function ProductosShow({ producto, entregas }: ProductosShowProps
                         </div>
                     </div>
 
-                    {/* Segunda fila: Entregas ocupando todo el ancho */}
+                    {/* Entregas ocupando todo el ancho */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2">
                                     <FileText className="h-5 w-5" />
-                                    Entregas ({entregas?.length || 0})
+                                    Entregas
                                 </CardTitle>
-                                {/* Botones de acción para entregas */}
-                                <div className="flex gap-2">
-                                    {/* Lógica para mostrar el botón de planeación o evidencia */}
-                                    {(() => {
-                                        const tienePlaneacion = entregas.some(e => e.tipo === 'planeacion');
-                                        const tieneEvidencia = entregas.some(e => e.tipo === 'evidencia');
-                                        if (!tienePlaneacion) {
-                                            return (
-                                                <Button asChild size="sm" variant="default">
-                                                    <Link href={route('entregas.planeacion.create', producto.id)}>
-                                                        <Plus className="h-4 w-4 mr-2" />
-                                                        Registrar Planeación
-                                                    </Link>
-                                                </Button>
-                                            );
-                                        } else if (tienePlaneacion && !tieneEvidencia) {
-                                            return (
-                                                <Button asChild size="sm" variant="secondary">
-                                                    <Link href={route('entregas.evidencia.create', producto.id)}>
-                                                        <Plus className="h-4 w-4 mr-2" />
-                                                        Registrar Evidencia
-                                                    </Link>
-                                                </Button>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {/* Agrupar entregas por periodo usando Accordion */}
-                            {(() => {
-                                // Agrupar entregas por periodo
-                                const entregasPorPeriodo = entregas.reduce((acc, entrega) => {
-                                    const periodoId = entrega.periodo.id;
-                                    if (!acc[periodoId]) {
-                                        acc[periodoId] = {
-                                            periodo: entrega.periodo,
-                                            entregas: [],
-                                        };
-                                    }
-                                    acc[periodoId].entregas.push(entrega);
-                                    return acc;
-                                }, {} as Record<string, { periodo: Entrega['periodo']; entregas: Entrega[] }>);
-                                const periodos = Object.values(entregasPorPeriodo);
-                                if (periodos.length === 0) {
-                                    // Mantener la lógica de botones vacíos
-                                    const tienePlaneacion = entregas.some(e => e.tipo === 'planeacion');
-                                    const tieneEvidencia = entregas.some(e => e.tipo === 'evidencia');
-                                    return (
-                                        <div className="text-center py-8">
-                                            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                            <p className="text-gray-500 mb-4">No hay entregas registradas para este producto</p>
-                                            {(() => {
-                                                if (!tienePlaneacion) {
-                                                    return (
-                                                        <Button asChild>
-                                                            <Link href={route('entregas.planeacion.create', producto.id)}>
-                                                                <Plus className="h-4 w-4 mr-2" />
-                                                                Registrar Planeación
-                                                            </Link>
-                                                        </Button>
-                                                    );
-                                                } else if (tienePlaneacion && !tieneEvidencia) {
-                                                    return (
-                                                        <Button asChild variant="secondary">
-                                                            <Link href={route('entregas.evidencia.create', producto.id)}>
-                                                                <Plus className="h-4 w-4 mr-2" />
-                                                                Registrar Evidencia
-                                                            </Link>
-                                                        </Button>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                        </div>
-                                    );
-                                }
-                                return (
-                                    <Accordion type="multiple" className="w-full">
-                                        {periodos.map(({ periodo, entregas }) => (
-                                            <AccordionItem key={periodo.id} value={String(periodo.id)} className="bg-gray-100 rounded-lg p-3">
-                                                <AccordionTrigger>
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="font-medium">{periodo.nombre}</span> 
-                                                        <span className="font-medium text-gray-500">Planeación hasta: {formatDate(periodo.fecha_limite_planeacion)} | Evidencias hasta: {formatDate(periodo.fecha_limite_evidencias)}</span>
-                                                    </div>
-                                                </AccordionTrigger>
-                                                <AccordionContent>
-                                                    {entregas.length > 0 ? (
-                                                        <>
-                                                            <Alert className="mb-4">
-                                                                <AlertTriangle className="h-4 w-4" />
-                                                                <AlertTitle>Importante</AlertTitle>
-                                                                <AlertDescription>
-                                                                    Una vez enviada, la entrega no puede ser modificada. Revisa cuidadosamente toda la información antes de enviar.
-                                                                </AlertDescription>
-                                                            </Alert>
-                                                            <Table>
-                                                                <TableHeader>
-                                                                    <TableRow>
-                                                                        <TableHead>Tipo</TableHead>
-                                                                        <TableHead>Entregado por</TableHead>
-                                                                        <TableHead>Fecha</TableHead>
-                                                                        <TableHead>Acciones</TableHead>
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {entregas.map((entrega) => (
-                                                                        <TableRow key={entrega.id}>
-                                                                            <TableCell>
-                                                                                <Badge variant={entrega.tipo === 'planeacion' ? 'default' : 'secondary'}>
-                                                                                    {entrega.tipo === 'planeacion' ? 'Planeación' : 'Evidencia'}
-                                                                                </Badge>
-                                                                            </TableCell>
-                                                                            <TableCell>{entrega.usuario.name}</TableCell>
-                                                                            <TableCell>{formatDate(entrega.created_at)}</TableCell>
-                                                                            <TableCell>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <Button variant="outline" size="sm" asChild>
-                                                                                        <Link href={route('entregas.show', entrega.id)}>
-                                                                                            <Eye className="h-4 w-4" />
-                                                                                        </Link>
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </TableCell>
-                                                                        </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </>
-                                                    ) : (
-                                                        <div className="text-center py-4 text-gray-500">No hay entregas para este período</div>
+                            <Accordion type="multiple" className="w-full">
+                                {periodos.length === 0 && (
+                                    <div className="text-center py-8">
+                                        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-500 mb-4">No hay entregas ni periodos activos para este producto</p>
+                                    </div>
+                                )}
+                                {periodos.map((periodo) => (
+                                    <AccordionItem key={periodo.id} value={String(periodo.id)} className="bg-gray-100 rounded-lg p-3">
+                                        <AccordionTrigger>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="font-medium">{periodo.nombre}</span>
+                                                <span className="font-medium text-gray-500">Planeación hasta: {formatDate(periodo.fecha_limite_planeacion)} | Evidencias hasta: {formatDate(periodo.fecha_limite_evidencias)}</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent>
+                                            {/* Botones de acción */}
+                                            <div className="flex gap-2 mb-4">
+                                                {!periodo.planeacion && periodo.estado === 'Activo' && (
+                                                    <Button asChild size="sm" variant="default">
+                                                        <Link href={route('entregas.planeacion.create', producto.id) + `?periodo_id=${periodo.id}`}>
+                                                            <Plus className="h-4 w-4 mr-2" />Registrar Planeación
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                                {periodo.planeacion && periodo.planeacion.estado === 'aprobada' && !periodo.evidencia && periodo.estado === 'Activo' &&
+                                                    new Date() <= new Date(periodo.fecha_limite_evidencias) && (
+                                                    <Button asChild size="sm" variant="secondary">
+                                                        <Link href={route('entregas.evidencia.create', producto.id) + `?periodo_id=${periodo.id}`}>
+                                                            <Plus className="h-4 w-4 mr-2" />Registrar Evidencia
+                                                        </Link>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            {/* Tabla de entregas */}
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Tipo</TableHead>
+                                                        <TableHead>Estado</TableHead>
+                                                        <TableHead>Entregado por</TableHead>
+                                                        <TableHead>Fecha</TableHead>
+                                                        <TableHead>Acciones</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {periodo.planeacion && (
+                                                        <TableRow>
+                                                            <TableCell><Badge variant="default">Planeación</Badge></TableCell>
+                                                            <TableCell><Badge variant={periodo.planeacion.estado === 'aprobada' ? 'default' : 'secondary'}>{periodo.planeacion.estado}</Badge></TableCell>
+                                                            <TableCell>{periodo.planeacion.usuario.name}</TableCell>
+                                                            <TableCell>{formatDate(periodo.planeacion.created_at)}</TableCell>
+                                                            <TableCell>
+                                                                <Button variant="outline" size="sm" asChild>
+                                                                    <Link href={route('entregas.show', periodo.planeacion.id)}>
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
                                                     )}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        ))}
-                                    </Accordion>
-                                );
-                            })()}
+                                                    {periodo.evidencia && (
+                                                        <TableRow>
+                                                            <TableCell><Badge variant="secondary">Evidencia</Badge></TableCell>
+                                                            <TableCell><Badge variant={periodo.evidencia.estado === 'aprobada' ? 'default' : 'secondary'}>{periodo.evidencia.estado}</Badge></TableCell>
+                                                            <TableCell>{periodo.evidencia.usuario.name}</TableCell>
+                                                            <TableCell>{formatDate(periodo.evidencia.created_at)}</TableCell>
+                                                            <TableCell>
+                                                                <Button variant="outline" size="sm" asChild>
+                                                                    <Link href={route('entregas.show', periodo.evidencia.id)}>
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                    {!periodo.planeacion && !periodo.evidencia && (
+                                                        <TableRow>
+                                                            <TableCell colSpan={5} className="text-center text-gray-500">No hay entregas para este período</TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
                         </CardContent>
                     </Card>
                 </div>

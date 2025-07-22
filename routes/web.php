@@ -12,9 +12,13 @@ use App\Http\Controllers\TipoProductoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Ruta raíz - Login page
 Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+    return Inertia::render('auth/page', [
+        'canResetPassword' => Route::has('password.request'),
+        'status' => session('status'),
+    ]);
+})->middleware('guest')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

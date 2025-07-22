@@ -21,7 +21,7 @@ class EntregaProducto extends Model
         'progreso_planeacion',
         'progreso_evidencia',
         'horas_planeacion',
-        'horas_evidencia',
+        'estado',
     ];
 
     protected $casts = [

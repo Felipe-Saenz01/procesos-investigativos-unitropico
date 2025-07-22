@@ -71,7 +71,6 @@ export default function EntregasCreate({ producto, periodos, entregasExistentes 
         progreso_planeacion: 0,
         progreso_evidencia: 0,
         horas_planeacion: 1,
-        horas_evidencia: 0,
     });
 
     const handleSubmit = (e: FormEvent) => {

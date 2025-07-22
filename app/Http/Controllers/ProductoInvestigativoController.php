@@ -19,12 +19,11 @@ class ProductoInvestigativoController extends Controller
     public function index()
     {
         $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto', 'usuarios'])
-            ->whereHas('proyecto.usuarios', function ($query) {
+            ->whereHas('usuarios', function ($query) {
                 $query->where('user_id', Auth::id());
             })
             ->orderBy('created_at', 'desc')
             ->get();
-
 
         return Inertia::render('Productos/Index', [
             'productos' => $productos,
@@ -36,7 +35,7 @@ class ProductoInvestigativoController extends Controller
      */
     public function create()
     {
-        // Obtener proyectos del usuario logueado
+        // Obtener proyectos donde el usuario logueado está asociado
         $proyectos = ProyectoInvestigativo::where('estado', 'Formulado')
             ->whereHas('usuarios', function ($query) {
                 $query->where('user_id', Auth::id());
@@ -50,10 +49,8 @@ class ProductoInvestigativoController extends Controller
         // Obtener subtipos de productos
         $subTipos = SubTipoProducto::all();
 
-
         // Obtener usuarios para el multiselect (solo usuarios que tengan proyectos)
         $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
-
 
         return Inertia::render('Productos/Create', [
             'proyectos' => $proyectos,
@@ -91,14 +88,16 @@ class ProductoInvestigativoController extends Controller
             'usuarios.*.exists' => 'Uno de los usuarios seleccionados no existe.',
         ]);
 
-        // Verificar que el proyecto pertenece al usuario logueado
-        // $proyecto = ProyectoInvestigativo::where('id', $request->proyecto_investigacion_id)
-        //     ->where('user_id', Auth::id())
-        //     ->first();
+        // Verificar que el proyecto está asociado al usuario logueado
+        $proyecto = ProyectoInvestigativo::where('id', $request->proyecto_investigacion_id)
+            ->whereHas('usuarios', function ($query) {
+                $query->where('user_id', Auth::id());
+            })
+            ->first();
 
-        // if (!$proyecto) {
-        //     return back()->withErrors(['proyecto_investigacion_id' => 'No tienes permisos para usar este proyecto.']);
-        // }
+        if (!$proyecto) {
+            return back()->withErrors(['proyecto_investigacion_id' => 'No tienes permisos para usar este proyecto.']);
+        }
 
         // Crear el producto
         $producto = ProductoInvestigativo::create([
@@ -120,22 +119,46 @@ class ProductoInvestigativoController extends Controller
      */
     public function show(ProductoInvestigativo $producto)
     {
-
-        // Verificar que el usuario tenga acceso al proyecto asociado
-        if (!$producto->usuarios->contains( Auth::id())) {
+        if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para ver este producto.');
         }
 
-        // Cargar las entregas por separado con sus relaciones
-        $entregas = EntregaProducto::where('producto_investigativo_id', $producto->id)
-            ->with(['periodo', 'usuario'])
-            ->orderBy('created_at', 'desc')
+        // Traer todos los periodos activos y los periodos en los que ya hay entregas para el producto
+        $periodosConEntregas = \App\Models\Periodo::where('estado', 'Activo')
+            ->orWhereHas('entregas', function ($q) use ($producto) {
+                $q->where('producto_investigativo_id', $producto->id);
+            })
+            ->orderBy('fecha_limite_planeacion', 'desc')
             ->get();
- 
+
+        $periodos = $periodosConEntregas->map(function ($periodo) use ($producto) {
+            $entregas = $periodo->entregas()->where('producto_investigativo_id', $producto->id)->with('usuario')->get();
+            $planeacion = $entregas->where('tipo', 'planeacion')->first();
+            $evidencia = $entregas->where('tipo', 'evidencia')->first();
+            return [
+                'id' => $periodo->id,
+                'nombre' => $periodo->nombre,
+                'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
+                'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
+                'estado' => $periodo->estado,
+                'planeacion' => $planeacion ? [
+                    'id' => $planeacion->id,
+                    'estado' => $planeacion->estado,
+                    'usuario' => $planeacion->usuario->only(['id', 'name']),
+                    'created_at' => $planeacion->created_at,
+                ] : null,
+                'evidencia' => $evidencia ? [
+                    'id' => $evidencia->id,
+                    'estado' => $evidencia->estado,
+                    'usuario' => $evidencia->usuario->only(['id', 'name']),
+                    'created_at' => $evidencia->created_at,
+                ] : null,
+            ];
+        })->values();
 
         return Inertia::render('Productos/Show', [
             'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios']),
-            'entregas' => $entregas,
+            'periodos' => $periodos,
         ]);
     }
 
@@ -144,23 +167,31 @@ class ProductoInvestigativoController extends Controller
      */
     public function edit(ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al proyecto asociado
-        if (!$producto->usuarios->contains( Auth::id())) {
+        // Verificar que el usuario tenga acceso al producto (está en la lista de usuarios asociados)
+        if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para editar este producto.');
         }
 
-        // Obtener proyectos del usuario logueado
-        $proyectos = ProyectoInvestigativo::where('user_id', Auth::id())
-            ->where('estado', 'Formulado')
+        // Verificar que el proyecto no esté en estado de formulación
+        if ($producto->proyecto->estado === 'Formulación') {
+            abort(403, 'No se puede editar un producto cuyo proyecto está en estado de formulación.');
+        }
+
+        // Obtener proyectos donde el usuario logueado está asociado (solo proyectos formulados)
+        $proyectos = ProyectoInvestigativo::where('estado', 'Formulado')
+            ->whereHas('usuarios', function ($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->get(['id', 'titulo']);
+
         // Obtener subtipos de productos
         $subTipos = SubTipoProducto::all();
+
         // Obtener usuarios para el multiselect
         $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
 
-
         return Inertia::render('Productos/Edit', [
-            'producto' => $producto->load(['usuarios']),
+            'producto' => $producto->load(['usuarios', 'proyecto', 'subTipoProducto']),
             'proyectos' => $proyectos,
             'subTipos' => $subTipos,
             'usuarios' => $usuarios,
@@ -172,9 +203,14 @@ class ProductoInvestigativoController extends Controller
      */
     public function update(Request $request, ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al proyecto asociado
-        if ($producto->proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario tenga acceso al producto (está en la lista de usuarios asociados)
+        if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para actualizar este producto.');
+        }
+
+        // Verificar que el proyecto no esté en estado de formulación
+        if ($producto->proyecto->estado === 'Formulación') {
+            abort(403, 'No se puede actualizar un producto cuyo proyecto está en estado de formulación.');
         }
 
         $request->validate([
@@ -196,9 +232,11 @@ class ProductoInvestigativoController extends Controller
             'usuarios.*.exists' => 'Uno de los usuarios seleccionados no existe.',
         ]);
 
-        // Verificar que el proyecto pertenece al usuario logueado
+        // Verificar que el proyecto está asociado al usuario logueado
         $proyecto = ProyectoInvestigativo::where('id', $request->proyecto_investigacion_id)
-            ->where('user_id', Auth::id())
+            ->whereHas('usuarios', function ($query) {
+                $query->where('user_id', Auth::id());
+            })
             ->first();
 
         if (!$proyecto) {
@@ -224,9 +262,14 @@ class ProductoInvestigativoController extends Controller
      */
     public function destroy(ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario sea propietario del proyecto asociado
-        if ($producto->proyecto->user_id !== Auth::id()) {
+        // Verificar que el usuario tenga acceso al producto (está en la lista de usuarios asociados)
+        if (!$producto->usuarios->contains(Auth::id())) {
             abort(403, 'No tienes permisos para eliminar este producto.');
+        }
+
+        // Verificar que el proyecto no esté en estado de formulación
+        if ($producto->proyecto->estado === 'Formulación') {
+            abort(403, 'No se puede eliminar un producto cuyo proyecto está en estado de formulación.');
         }
 
         // Verificar si el producto tiene entregas asociadas

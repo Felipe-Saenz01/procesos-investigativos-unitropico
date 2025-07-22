@@ -83,7 +83,6 @@ export default function EvidenciaCreate({ producto, periodo, planeacion, element
     const { data, setData, post, processing, errors, reset } = useForm({
         porcentaje_completado: planeacion.map(() => 0),
         progreso_evidencia: 0,
-        horas_evidencia: 0,
     });
 
     useEffect(() => {

@@ -161,7 +161,7 @@ class EntregaProductoController extends Controller
 
         // Validar horas disponibles del usuario en el período
         $horasDisponibles = $this->getHorasDisponiblesUsuario(Auth::id(), $request->periodo_id);
-        $horasSolicitadas = $request->horas_planeacion + ($request->horas_evidencia ?? 0);
+        $horasSolicitadas = $request->horas_planeacion;
         
         if ($horasSolicitadas > $horasDisponibles) {
             return back()->withErrors(['horas_planeacion' => "No tienes suficientes horas disponibles. Tienes {$horasDisponibles} horas y solicitas {$horasSolicitadas} horas."]);
@@ -179,11 +179,16 @@ class EntregaProductoController extends Controller
             'progreso_evidencia' => $request->progreso_evidencia ?? 0,
             'horas_planeacion' => $request->horas_planeacion,
             'horas_evidencia' => $request->horas_evidencia ?? 0,
+            'estado' => 'pendiente', // Establecer estado por defecto
         ]);
 
         // Si es evidencia, actualizar el progreso del producto
         if ($request->tipo === 'evidencia') {
             $this->actualizarProgresoProducto($producto->id);
+            
+            // Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
+            // y actualizar el estado del proyecto asociado
+            $this->verificarYActualizarEstadoProyecto($producto);
         }
 
         return to_route('productos.show', $producto)->with('success', 'Entrega creada exitosamente.');
@@ -257,6 +262,11 @@ class EntregaProductoController extends Controller
         $entregaProducto->update([
             'planeacion' => $request->planeacion,
         ]);
+
+        // Si es una entrega de evidencia, verificar si se debe actualizar el estado del proyecto
+        if ($entregaProducto->tipo === 'evidencia') {
+            $this->verificarYActualizarEstadoProyecto($entregaProducto->productoInvestigativo);
+        }
 
         return to_route('productos.show', $entregaProducto->productoInvestigativo)->with('success', 'Entrega actualizada exitosamente.');
     }
@@ -411,6 +421,7 @@ class EntregaProductoController extends Controller
             'progreso_evidencia' => 0,
             'horas_planeacion' => $request->horas_planeacion,
             'horas_evidencia' => 0,
+            'estado' => 'pendiente', // Establecer estado por defecto
         ]);
 
         return to_route('productos.show', $producto)->with('success', 'Planeación creada exitosamente.');
@@ -523,6 +534,7 @@ class EntregaProductoController extends Controller
             'progreso_evidencia' => $request->progreso_evidencia,
             'horas_planeacion' => $planeacion->horas_planeacion,
             'horas_evidencia' => $request->horas_evidencia ?? 0,
+            'estado' => 'pendiente', // Establecer estado por defecto
         ]);
 
         // Actualizar el progreso de los elementos del producto
@@ -530,6 +542,10 @@ class EntregaProductoController extends Controller
 
         // Actualizar el progreso general del producto
         $this->actualizarProgresoProducto($producto->id);
+
+        // Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
+        // y actualizar el estado del proyecto asociado
+        $this->verificarYActualizarEstadoProyecto($producto);
 
         return to_route('productos.show', $producto)->with('success', 'Evidencia creada exitosamente.');
     }
@@ -596,6 +612,44 @@ class EntregaProductoController extends Controller
                     ]);
                 }
             }
+        }
+    }
+
+    /**
+     * Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
+     * y actualizar el estado del proyecto asociado.
+     */
+    private function verificarYActualizarEstadoProyecto($producto)
+    {
+        // Cargar las relaciones necesarias si no están cargadas
+        if (!$producto->relationLoaded('subTipoProducto')) {
+            $producto->load('subTipoProducto');
+        }
+        if (!$producto->relationLoaded('proyecto')) {
+            $producto->load('proyecto');
+        }
+
+        // Verificar si el producto es de tipo formulación
+        $esProductoFormulacion = false;
+        
+        // Verificar por el nombre del subtipo de producto
+        if ($producto->subTipoProducto && 
+            (str_contains(strtolower($producto->subTipoProducto->nombre), 'formulación') || 
+             str_contains(strtolower($producto->subTipoProducto->nombre), 'formulacion'))) {
+            $esProductoFormulacion = true;
+        }
+        
+        // Verificar por el título del producto
+        if (str_starts_with(strtolower($producto->titulo), 'formulación del proyecto') || 
+            str_starts_with(strtolower($producto->titulo), 'formulacion del proyecto')) {
+            $esProductoFormulacion = true;
+        }
+
+        // Si es un producto de formulación y el proyecto está en estado "Formulación", actualizarlo a "Formulado"
+        if ($esProductoFormulacion && $producto->proyecto && $producto->proyecto->estado === 'Formulación') {
+            $producto->proyecto->update([
+                'estado' => 'Formulado'
+            ]);
         }
     }
 }

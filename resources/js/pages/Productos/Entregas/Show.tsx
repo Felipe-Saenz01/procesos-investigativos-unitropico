@@ -60,6 +60,8 @@ interface Entrega {
     periodo: Periodo;
     usuario: Usuario;
     producto_investigativo: ProductoInvestigativo;
+    horas_planeacion: number;
+    estado: string;
 }
 
 interface EntregasShowProps {
@@ -79,11 +81,11 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
         return tipo === 'planeacion' ? 'Planeación' : 'Evidencia';
     };
 
-    const getTipoDescription = (tipo: string) => {
-        return tipo === 'planeacion'
-            ? 'Planificación de actividades y porcentajes esperados'
-            : 'Evidencia del avance realizado según la planificación';
-    };
+    // const getTipoDescription = (tipo: string) => {
+    //     return tipo === 'planeacion'
+    //         ? 'Planificación de actividades y porcentajes esperados'
+    //         : 'Evidencia del avance realizado según la planificación';
+    // };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -118,24 +120,23 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                     Detalles de la Entrega
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center gap-4">
+                            <CardContent className=" flex space-x-2 items-center ">
+                                <div >
                                     <Badge variant={entrega.tipo === 'planeacion' ? 'default' : 'secondary'} className="text-sm">
                                         {getTipoLabel(entrega.tipo)}
                                     </Badge>
-                                    <span className="text-sm text-gray-500">
-                                        {getTipoDescription(entrega.tipo)}
-                                    </span>
                                 </div>
-
-                                <Separator />
-
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <Separator orientation="vertical"/>
+                                <div className="grid grid-cols-2 gap-4 text-sm h-full w-full">
                                     <div>
-                                        <span className="font-medium text-gray-500">Fecha de entrega:</span>
                                         <p className="flex items-center gap-1 mt-1">
+                                            <span className=" text-gray-500">Fecha de entrega:</span>
                                             <Calendar className="h-3 w-3" />
                                             {formatDate(entrega.created_at)}
+                                        </p>
+                                        <p className="flex items-center gap-1 mt-1">
+                                            <span className=" text-gray-500">Estado:</span>
+                                            <Badge variant={entrega.estado === 'aprobada' ? 'default' : 'secondary'}>{entrega.estado}</Badge>
                                         </p>
                                     </div>
                                 </div>
@@ -235,6 +236,29 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                     <div>
                                         <p className="font-medium">{entrega.usuario.name}</p>
                                         <p className="text-sm text-gray-500">Usuario del sistema</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Horas registradas */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5" />
+                                    Horas Registradas
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-sm">Horas de Planeación</p>
+                                            <p className="text-xs text-gray-500">Tiempo dedicado a planificar</p>
+                                        </div>
+                                        <Badge variant="outline" className="text-lg font-semibold">
+                                            {entrega.horas_planeacion}h
+                                        </Badge>
                                     </div>
                                 </div>
                             </CardContent>
