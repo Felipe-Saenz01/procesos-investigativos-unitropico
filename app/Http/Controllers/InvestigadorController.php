@@ -17,7 +17,7 @@ class InvestigadorController extends Controller
     public function index()
     {
         $investigadores = User::with(['grupo_investigacion'])
-            ->whereIn('role', ['Investigador', 'Lider Grupo'])
+            ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
             ->orderBy('name')
             ->get();
 
@@ -47,22 +47,22 @@ class InvestigadorController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $investigador->id,
-            'role' => 'required|in:Investigador,Lider Grupo',
+            'tipo' => 'required|in:Investigador,Lider Grupo',
             'grupo_investigacion_id' => 'nullable|exists:grupo_investigacions,id',
         ], [
             'name.required' => 'El nombre es requerido.',
             'email.required' => 'El correo es requerido.',
             'email.email' => 'El correo debe tener un formato válido.',
             'email.unique' => 'Ya existe un usuario con este correo.',
-            'role.required' => 'El rol es requerido.',
-            'role.in' => 'El rol debe ser Investigador o Líder Grupo.',
+            'tipo.required' => 'El rol es requerido.',
+            'tipo.in' => 'El rol debe ser Investigador o Líder Grupo.',
             'grupo_investigacion_id.exists' => 'El grupo de investigación seleccionado no existe.',
         ]);
 
         $investigador->update([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'tipo' => $request->tipo,
             'grupo_investigacion_id' => $request->grupo_investigacion_id,
         ]);
 

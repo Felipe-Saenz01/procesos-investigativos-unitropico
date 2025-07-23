@@ -6,6 +6,7 @@ use App\Models\GrupoInvestigacion;
 use App\Models\SubTipoProducto;
 use App\Models\TipoProducto;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -92,6 +93,9 @@ class DatabaseSeeder extends Seeder
 
         ];
 
+        $this->call(PermissionSeeder::class);
+        $this->call(RoleSeeder::class);
+
         // Crear tipos de productos y sus subtipos
         foreach ($tiposProducto as $tipo) {
             $tipoProducto = TipoProducto::create(['nombre' => $tipo['nombre']]);
@@ -114,14 +118,34 @@ class DatabaseSeeder extends Seeder
         $grupos = GrupoInvestigacion::all();
         $roles_users = ['Investigador', 'Lider Grupo'];
 
-        User::factory()->count(10)->create([
-            'role' => function () use ($roles_users) {
+        $users = User::factory()->count(10)->create([
+            'tipo' => function () use ($roles_users) {
                 return $roles_users[array_rand($roles_users)]; // Asignar un rol aleatorio
-            }, // Todos serán investigadores
+            },
             'grupo_investigacion_id' => function () use ($grupos) {
                 return $grupos->random()->id; // Asignar a un grupo aleatorio
             },
+            'password' => bcrypt('password'),
         ]);
+
+        // Asignar rol según el tipo
+        foreach ($users as $user) {
+            if ($user->tipo === 'Investigador') {
+                $user->assignRole('Investigador');
+            } elseif ($user->tipo === 'Lider Grupo') {
+                $user->assignRole('Lider Grupo');
+            }
+        }
+
+        // Crear usuario administrador
+        $admin = User::firstOrCreate([
+            'email' => 'administrador@gmail.com',
+        ], [
+            'name' => 'Administrador',
+            'password' => bcrypt('administrador'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Administrador');
 
         
     }

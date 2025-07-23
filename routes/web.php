@@ -4,6 +4,8 @@ use App\Http\Controllers\ElementosProductoController;
 use App\Http\Controllers\EntregaProductoController;
 use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
+use App\Http\Controllers\Parametros\PermisoController;
+use App\Http\Controllers\Parametros\RolController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\ProductoInvestigativoController;
 use App\Http\Controllers\ProyectoInvestigativoController;
@@ -29,6 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('tipo-producto', TipoProductoController::class);
         Route::resource('subtipo-producto', SubTipoProductoController::class);
         Route::resource('periodo', PeriodoController::class);
+        Route::resource('rol', RolController::class);
+        Route::resource('permiso', PermisoController::class);
+        Route::get('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'permisos'])->name('rol.permisos');
+        Route::put('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'actualizarPermisos'])->name('rol.permisos.update');
     });
 
     Route::resource('grupo-investigacion', GrupoInvestigacionController::class);

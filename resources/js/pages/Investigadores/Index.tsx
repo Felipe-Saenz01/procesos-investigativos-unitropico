@@ -24,7 +24,7 @@ interface Investigador {
     id: number;
     name: string;
     email: string;
-    role: string;
+    tipo: string;
     grupo_investigacion_id: number;
     grupo_investigacion?: GrupoInvestigacion;
 }
@@ -43,8 +43,8 @@ interface PageProps {
 export default function InvestigadoresIndex({ investigadores }: InvestigadoresProps) {
     const { flash } = usePage().props as PageProps;
 
-    const getRoleBadge = (role: string) => {
-        if (role === 'Lider Grupo') {
+    const getRoleBadge = (tipo: string) => {
+        if (tipo === 'Lider Grupo') {
             return <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">Líder Grupo</Badge>;
         }
         return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Investigador</Badge>;
@@ -82,7 +82,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                     <TableRow>
                                         <TableHead className='w-1/4'>Nombre</TableHead>
                                         <TableHead className='w-1/4'>Correo</TableHead>
-                                        <TableHead className='w-1/6'>Rol</TableHead>
+                                        <TableHead className='w-1/6'>Tipo</TableHead>
                                         <TableHead className='w-1/4'>Grupo de Investigación</TableHead>
                                         <TableHead className='w-1/5'>Acciones</TableHead>
                                     </TableRow>
@@ -93,7 +93,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                             <TableCell className='w-1/4 font-medium'>{investigador.name}</TableCell>
                                             <TableCell className='w-1/4'>{investigador.email}</TableCell>
                                             <TableCell className='w-1/6'>
-                                                {getRoleBadge(investigador.role)}
+                                                {getRoleBadge(investigador.tipo)}
                                             </TableCell>
                                             <TableCell className='w-1/4'>
                                                 {investigador.grupo_investigacion ? 

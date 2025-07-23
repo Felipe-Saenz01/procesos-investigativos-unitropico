@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Agregar el campo 'role' (tipo de usuario)
-            $table->string('role')->default('Investigador'); // Valores: administrador, lider, investigador
+            $table->string('tipo')->default('Investigador'); // Valores: administrador, lider, investigador
             // Agregar la clave foránea 'grupo_investigacion_id'
             $table->foreignId('grupo_investigacion_id')
                   ->nullable() // Permite valores nulos
@@ -31,8 +31,8 @@ return new class extends Migration
             $table->dropForeign(['grupo_investigacion_id']); // Eliminar la restricción de clave foránea
             $table->dropColumn('grupo_investigacion_id'); // Eliminar la columna
 
-            // Eliminar el campo 'role'
-            $table->dropColumn('role');
+            // Eliminar el campo 'tipo'
+            $table->dropColumn('tipo');
         });
     }
 };

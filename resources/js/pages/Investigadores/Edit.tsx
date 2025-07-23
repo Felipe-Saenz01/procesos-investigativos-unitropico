@@ -31,7 +31,7 @@ interface Investigador {
     id: number;
     name: string;
     email: string;
-    role: string;
+    tipo: string;
     grupo_investigacion_id: number | null;
 }
 
@@ -44,7 +44,7 @@ export default function InvestigadorEdit({ investigador, gruposInvestigacion }: 
     const { data, setData, put, processing, errors } = useForm({
         name: investigador.name,
         email: investigador.email,
-        role: investigador.role,
+        tipo: investigador.tipo,
         grupo_investigacion_id: investigador.grupo_investigacion_id,
     });
 
@@ -110,10 +110,10 @@ export default function InvestigadorEdit({ investigador, gruposInvestigacion }: 
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="role">Rol</Label>
+                                    <Label htmlFor="tipo">Tipo Usuario</Label>
                                     <Select 
-                                        value={data.role} 
-                                        onValueChange={(value) => setData('role', value)}
+                                        value={data.tipo} 
+                                        onValueChange={(value) => setData('tipo', value)}
                                     >
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Seleccionar rol" />

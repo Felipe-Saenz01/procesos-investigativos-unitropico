@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, ReceiptText, UserRoundSearch } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -44,7 +44,6 @@ const NavParamsItems: NavItem[] = [
     },
     {
         title: 'Tipos Productos',
-        // href: '/parametros/tipo-producto',
         href: route('parametros.tipo-producto.index'),
         icon: Layers2,
     },
@@ -52,7 +51,27 @@ const NavParamsItems: NavItem[] = [
         title: 'Subtipos Productos',
         href: route('parametros.subtipo-producto.index'),
         icon: LibraryBig,
-    }
+    },
+    {
+        title: 'Roles',
+        href: route('parametros.rol.index'),
+        icon: Users,
+    },
+    {
+        title: 'Permisos',
+        href: route('parametros.permiso.index'),
+        icon: UserCheck,
+    },
+    {
+        title: 'Tipo Contrato',
+        href: route('parametros.permiso.index'),
+        icon: ReceiptText,
+    },
+    {
+        title: 'Tipo de Profesor',
+        href: route('parametros.permiso.index'),
+        icon: UserRoundSearch,
+    },
 ];
 
 // const footerNavItems: NavItem[] = [
@@ -70,6 +89,9 @@ const NavParamsItems: NavItem[] = [
 
 export function AppSidebar() {
     const page = usePage();
+    const user = page.props.auth?.user;
+    // Permitir ver parámetros si el usuario tiene el permiso 'ver-parametros'
+    const puedeVerParametros = (user?.permissions ?? []).includes('ver-parametros');
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -86,22 +108,26 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                <SidebarSeparator className='px-2 w-full' />
-                <SidebarGroupContent className='px-2'>
-                    <SidebarGroupLabel>Parámetros</SidebarGroupLabel>
-                    <SidebarMenu>
-                        {NavParamsItems.map((item) => (
-                            <SidebarMenuItem key={item.title}>
-                                <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
-                                    <Link href={item.href} prefetch>
-                                        {item.icon && <item.icon />}
-                                        <span> {item.title}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroupContent>
+                {puedeVerParametros && (
+                    <>
+                        <SidebarSeparator className='px-2 w-full' />
+                        <SidebarGroupContent className='px-2'>
+                            <SidebarGroupLabel>Parámetros</SidebarGroupLabel>
+                            <SidebarMenu>
+                                {NavParamsItems.map((item) => (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
+                                            <Link href={item.href} prefetch>
+                                                {item.icon && <item.icon />}
+                                                <span> {item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </>
+                )}
             </SidebarContent>
 
             <SidebarFooter>
