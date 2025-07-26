@@ -14,7 +14,7 @@ class GrupoInvestigacionController extends Controller
     public function index()
     {
         $gruposInvestigacion = GrupoInvestigacion::with(['usuarios' => function($query) {
-            $query->select('id', 'name', 'email', 'role', 'grupo_investigacion_id');
+            $query->select('id', 'name', 'email', 'tipo', 'grupo_investigacion_id');
         }])->orderBy('created_at', 'desc')->get();
 
         return Inertia::render('GrupoInvestigacion/Index', [

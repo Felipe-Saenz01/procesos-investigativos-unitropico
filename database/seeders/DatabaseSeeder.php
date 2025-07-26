@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\GrupoInvestigacion;
 use App\Models\SubTipoProducto;
+use App\Models\TipoContrato;
 use App\Models\TipoProducto;
+use App\Models\TipoVinculacion;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -93,6 +95,42 @@ class DatabaseSeeder extends Seeder
 
         ];
 
+        $tiposVinculacion = [
+            [
+                'nombre' => 'Profesor Auxiliar',
+                'horas_semanales' => 13,
+            ],
+            [
+                'nombre' => 'Profesor Asistente',
+                'horas_semanales' => 16,
+            ],
+            [
+                'nombre' => 'Profesor Asociado',
+                'horas_semanales' => 21,
+            ],
+            [
+                'nombre' => 'Profesor Titular',
+                'horas_semanales' => 26,
+            ]
+        ];
+
+        $tiposContrato = [
+            [
+                'nombre' => 'Provicional',
+                'numero_periodos' => 2,
+            ],
+            [
+                'nombre' => 'Ocasional Tiempo Completo',
+                'numero_periodos' => 2,
+            ],
+            [
+                'nombre' => 'Ocasional',
+                'numero_periodos' => 1,
+            ],
+        ];
+
+
+
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
 
@@ -112,6 +150,20 @@ class DatabaseSeeder extends Seeder
             GrupoInvestigacion::create([
                 'nombre' => $grupo['nombre'],
                 'correo' => $grupo['correo'],
+            ]);
+        }
+
+        foreach ($tiposVinculacion as $tipoVinculacion) {
+            TipoVinculacion::create([
+                'nombre' => $tipoVinculacion['nombre'],
+                'horas_semanales' => $tipoVinculacion['horas_semanales'],
+            ]);
+        }
+
+        foreach ($tiposContrato as $tipoContrato) {
+            TipoContrato::create([
+                'nombre' => $tipoContrato['nombre'],
+                'numero_periodos' => $tipoContrato['numero_periodos'],
             ]);
         }
 
@@ -143,6 +195,8 @@ class DatabaseSeeder extends Seeder
         ], [
             'name' => 'Administrador',
             'password' => bcrypt('administrador'),
+            'tipo'=> 'Administrador',
+            'cedula'=> 1234567890,
             'email_verified_at' => now(),
         ]);
         $admin->assignRole('Administrador');

@@ -37,7 +37,7 @@ interface SubTipoProducto {
 interface Usuario {
     id: number;
     name: string;
-    role: string;
+    tipo: string;
 }
 
 interface ProductosCreateProps {
@@ -80,7 +80,7 @@ export default function ProductosCreate({ proyectos, subTipos, usuarios, usuario
 
     // Convertir usuarios a opciones para MultiSelect
     const usuarioOptions: Option[] = usuarios.map(usuario => ({
-        label: `${usuario.name} (${usuario.role})`,
+        label: `${usuario.name} (${usuario.tipo})`,
         value: usuario.id.toString()
     }));
 

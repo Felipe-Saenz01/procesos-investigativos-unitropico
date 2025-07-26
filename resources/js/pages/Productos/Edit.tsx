@@ -26,7 +26,7 @@ interface SubTipoProducto {
 interface Usuario {
     id: number;
     name: string;
-    role: string;
+    tipo: string;
 }
 
 interface ProductoInvestigativo {
@@ -85,7 +85,7 @@ export default function ProductosEdit({ producto, proyectos, subTipos, usuarios 
 
     // Convertir usuarios a opciones para MultiSelect
     const usuarioOptions: Option[] = usuarios.map(usuario => ({
-        label: `${usuario.name} (${usuario.role})`,
+        label: `${usuario.name} (${usuario.tipo})`,
         value: usuario.id.toString()
     }));
 

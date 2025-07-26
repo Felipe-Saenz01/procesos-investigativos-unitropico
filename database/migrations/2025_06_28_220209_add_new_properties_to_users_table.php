@@ -15,6 +15,7 @@ return new class extends Migration
             // Agregar el campo 'role' (tipo de usuario)
             $table->string('tipo')->default('Investigador'); // Valores: administrador, lider, investigador
             // Agregar la clave foránea 'grupo_investigacion_id'
+            $table->integer('cedula')->unique();  
             $table->foreignId('grupo_investigacion_id')
                   ->nullable() // Permite valores nulos
                   ->constrained('grupo_investigacions'); // Referencia a la tabla 'grupo_investigacions'
@@ -33,6 +34,7 @@ return new class extends Migration
 
             // Eliminar el campo 'tipo'
             $table->dropColumn('tipo');
+            $table->dropColumn('cedula');
         });
     }
 };

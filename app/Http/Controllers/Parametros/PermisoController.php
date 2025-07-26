@@ -9,7 +9,17 @@ use Spatie\Permission\Models\Permission;
 
 class PermisoController extends Controller
 {
-    const ENTIDADES = ['usuario','grupo-investigacion', 'proyecto', 'producto', 'entrega', 'rol', 'permiso'];
+    const ENTIDADES = [
+        'usuario',
+        'grupo-investigacion',
+        'proyecto',
+        'producto',
+        'entrega',
+        'rol',
+        'permiso',
+        'horas-investigacion',
+        'parametros'
+    ];
     // const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'asignar', 'aprobar', 'exportar'];
     const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'revisar', 'aprobar'];
 

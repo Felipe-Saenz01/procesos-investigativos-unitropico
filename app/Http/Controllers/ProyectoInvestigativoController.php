@@ -36,7 +36,7 @@ class ProyectoInvestigativoController extends Controller
      */
     public function create()
     {
-        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
         return Inertia::render('Proyectos/Create', [
             'usuarios' => $usuarios,
             'usuarioLogueado' => Auth::id(),
@@ -208,7 +208,7 @@ class ProyectoInvestigativoController extends Controller
             abort(403, 'No tienes permisos para editar este proyecto.');
         }
 
-        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
         $usuariosSeleccionados = $proyecto->usuarios->pluck('id')->toArray();
         
         // Cargar solo las actividades del usuario logueado

@@ -33,6 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('periodo', PeriodoController::class);
         Route::resource('rol', RolController::class);
         Route::resource('permiso', PermisoController::class);
+        Route::resource('tipo-vinculacion', \App\Http\Controllers\Parametros\TipoVinculacionController::class);
+        Route::resource('tipo-contrato', \App\Http\Controllers\Parametros\TipoContratoController::class);
         Route::get('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'permisos'])->name('rol.permisos');
         Route::put('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'actualizarPermisos'])->name('rol.permisos.update');
     });
@@ -41,14 +43,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Rutas para Investigadores
     Route::get('investigadores', [InvestigadorController::class, 'index'])->name('investigadores.index');
+    Route::get('investigadores/create', [InvestigadorController::class, 'create'])->name('investigadores.create');
+    Route::post('investigadores', [InvestigadorController::class, 'store'])->name('investigadores.store');
     Route::get('investigadores/{investigador}/edit', [InvestigadorController::class, 'edit'])->name('investigadores.edit');
     Route::put('investigadores/{investigador}', [InvestigadorController::class, 'update'])->name('investigadores.update');
+    Route::delete('investigadores/{investigador}', [InvestigadorController::class, 'destroy'])->name('investigadores.destroy');
     
     // Rutas para horas de investigación
-    Route::get('investigadores/{investigador}/horas', [InvestigadorController::class, 'horas'])->name('investigadores.horas');
-    Route::post('investigadores/{investigador}/horas', [InvestigadorController::class, 'storeHoras'])->name('investigadores.storeHoras');
-    Route::put('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'updateHoras'])->name('investigadores.updateHoras');
-    Route::delete('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'destroyHoras'])->name('investigadores.destroyHoras');
+    Route::get('investigadores/{investigador}/horas', [ InvestigadorController::class, 'horas'])->name('investigadores.horas');
+    Route::get('investigadores/{investigador}/horas/create', [InvestigadorController::class, 'createHoras'])->name('investigadores.horas.create');
+    Route::post('investigadores/{investigador}/horas', [InvestigadorController::class, 'storeHoras'])->name('investigadores.horas.store');
+    Route::get('investigadores/{investigador}/horas/{horasInvestigacion}/edit', [InvestigadorController::class, 'editHoras'])->name('investigadores.horas.edit');
+    Route::put('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'updateHoras'])->name('investigadores.horas.update');
+    Route::delete('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'destroyHoras'])->name('investigadores.horas.destroy');
 
     // Rutas para Proyectos Investigativos
     Route::resource('proyectos', ProyectoInvestigativoController::class);

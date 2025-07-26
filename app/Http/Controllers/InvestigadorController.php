@@ -4,120 +4,170 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\GrupoInvestigacion;
-use App\Models\HorasInvestigacion;
 use App\Models\Periodo;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\Models\Role;
+use App\Models\TipoContrato;
+use App\Models\TipoVinculacion;
 
 class InvestigadorController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $investigadores = User::with(['grupo_investigacion'])
-            ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
-            ->orderBy('name')
-            ->get();
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('Administrador');
+        $isLider = $user->hasRole('Lider Grupo');
 
-        return Inertia::render('Investigadores/Index', [
+        // Si es administrador, se muestran todos los investigadores
+        if ($isAdmin) {
+            $investigadores = User::with('grupo_investigacion')
+                ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
+                ->get();
+        // Si es lider de grupo, se muestran los investigadores de su grupo
+        } elseif ($isLider) {
+            $investigadores = User::with('grupo_investigacion')
+                ->where('grupo_investigacion_id', $user->grupo_investigacion_id)
+                ->get();
+        // Si no es administrador ni lider de grupo, se redirige a la página de inicio
+        } else {
+            return redirect()->route('dashboard');
+        }
+
+        return inertia('Investigadores/Index', [
             'investigadores' => $investigadores,
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    public function show(User $investigador)
+    {
+        return inertia('Investigadores/Show', [
+            'investigador' => $investigador->load('grupo_investigacion'),
+        ]);
+    }
+
+    public function create()
+    {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('Administrador');
+        $isLider = $user->hasRole('Lider Grupo');
+        $grupos = GrupoInvestigacion::all(['id', 'nombre']);
+        $grupoLider = $isLider ? $user->grupo_investigacion_id : null;
+        $tipoContratos = TipoContrato::all(['id', 'nombre']);
+        $tipoVinculaciones = TipoVinculacion::all(['id', 'nombre']);
+        return inertia('Investigadores/Create', [
+            'isAdmin' => $isAdmin,
+            'isLider' => $isLider,
+            'grupos' => $grupos,
+            'grupoLider' => $grupoLider,
+            'tipoContratos' => $tipoContratos,
+            'tipoVinculaciones' => $tipoVinculaciones,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('Administrador');
+        $isLider = $user->hasRole('Lider Grupo');
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'cedula' => 'required|digits_between:6,15|unique:users,cedula',
+            'grupo_investigacion_id' => $isAdmin ? 'required|exists:grupo_investigacions,id' : 'nullable',
+            'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
+            'tipo_vinculacion_id' => 'required|exists:tipo_vinculacions,id',
+        ]);
+
+        if ($isAdmin) {
+            $data['tipo'] = 'Lider Grupo';
+            $data['grupo_investigacion_id'] = $request->grupo_investigacion_id;
+        } elseif ($isLider) {
+            $data['tipo'] = 'Investigador';
+            $data['grupo_investigacion_id'] = $user->grupo_investigacion_id;
+        } else {
+            abort(403, 'No autorizado para crear usuarios');
+        }
+
+        $data['password'] = Hash::make($data['cedula']);
+
+        $nuevoUsuario = User::create($data);
+        $nuevoUsuario->assignRole($data['tipo']);
+
+        return to_route('investigadores.index')->with('success', 'Usuario creado correctamente');
+    }
+
     public function edit(User $investigador)
     {
-        $gruposInvestigacion = GrupoInvestigacion::orderBy('nombre')->get();
-        
-        return Inertia::render('Investigadores/Edit', [
+        $grupos = GrupoInvestigacion::all(['id', 'nombre']);
+        $tipoContratos = TipoContrato::all(['id', 'nombre']);
+        $tipoVinculaciones = TipoVinculacion::all(['id', 'nombre']);
+        return inertia('Investigadores/Edit', [
             'investigador' => $investigador,
-            'gruposInvestigacion' => $gruposInvestigacion,
+            'grupos' => $grupos,
+            'tipoContratos' => $tipoContratos,
+            'tipoVinculaciones' => $tipoVinculaciones,
         ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, User $investigador)
     {
-        $request->validate([
+        $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $investigador->id,
-            'tipo' => 'required|in:Investigador,Lider Grupo',
+            'cedula' => 'required|digits_between:6,15|unique:users,cedula,' . $investigador->id,
             'grupo_investigacion_id' => 'nullable|exists:grupo_investigacions,id',
-        ], [
-            'name.required' => 'El nombre es requerido.',
-            'email.required' => 'El correo es requerido.',
-            'email.email' => 'El correo debe tener un formato válido.',
-            'email.unique' => 'Ya existe un usuario con este correo.',
-            'tipo.required' => 'El rol es requerido.',
-            'tipo.in' => 'El rol debe ser Investigador o Líder Grupo.',
-            'grupo_investigacion_id.exists' => 'El grupo de investigación seleccionado no existe.',
+            'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
+            'tipo_vinculacion_id' => 'required|exists:tipo_vinculacions,id',
         ]);
-
-        $investigador->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'tipo' => $request->tipo,
-            'grupo_investigacion_id' => $request->grupo_investigacion_id,
-        ]);
-
-        return to_route('investigadores.index')->with('success', 'Investigador actualizado exitosamente.');
+        $investigador->update($data);
+        return to_route('investigadores.index')->with('success', 'Investigador actualizado correctamente');
     }
 
-    /**
-     * Show the horas de investigación for a specific user.
-     */
+    public function destroy(User $investigador)
+    {
+        $investigador->delete();
+        return to_route('investigadores.index')->with('success', 'Investigador eliminado correctamente');
+    }
+
+    // --- Métodos de Horas de Investigación ---
     public function horas(User $investigador)
     {
-        $horasInvestigacion = HorasInvestigacion::with(['periodo'])
-            ->where('user_id', $investigador->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $periodos = Periodo::orderBy('nombre')->get();
-
-        return Inertia::render('Investigadores/Horas', [
+        $horas = $investigador->horasInvestigacion()->with('periodo')->get();
+        $periodos = \App\Models\Periodo::all(['id', 'nombre']);
+        return inertia('Investigadores/Horas', [
             'investigador' => $investigador,
-            'horasInvestigacion' => $horasInvestigacion,
+            'horasInvestigacion' => $horas,
             'periodos' => $periodos,
         ]);
     }
 
-    /**
-     * Store horas de investigación for a specific user.
-     */
+    public function createHoras(User $investigador)
+    {
+        $periodos = Periodo::all(['id', 'nombre']);
+        return inertia('Investigadores/HorasCreate', [
+            'investigador' => $investigador,
+            'periodos' => $periodos,
+        ]);
+    }
+
     public function storeHoras(Request $request, User $investigador)
     {
         $request->validate([
             'periodo_id' => 'required|exists:periodos,id',
             'horas' => 'required|integer|min:0',
             'estado' => 'required|in:Activo,Inactivo',
-        ], [
-            'periodo_id.required' => 'El período es requerido.',
-            'periodo_id.exists' => 'El período seleccionado no existe.',
-            'horas.required' => 'Las horas son requeridas.',
-            'horas.integer' => 'Las horas deben ser un número entero.',
-            'horas.min' => 'Las horas no pueden ser negativas.',
-            'estado.required' => 'El estado es requerido.',
-            'estado.in' => 'El estado debe ser Activo o Inactivo.',
         ]);
 
         // Verificar si ya existe un registro para este usuario y período
-        $existingHoras = HorasInvestigacion::where('user_id', $investigador->id)
-            ->where('periodo_id', $request->periodo_id)
-            ->first();
-
+        $existingHoras = $investigador->horasInvestigacion()->where('periodo_id', $request->periodo_id)->first();
         if ($existingHoras) {
             return back()->withErrors(['periodo_id' => 'Ya existe un registro de horas para este período.']);
         }
 
-        HorasInvestigacion::create([
-            'user_id' => $investigador->id,
+        $investigador->horasInvestigacion()->create([
             'periodo_id' => $request->periodo_id,
             'horas' => $request->horas,
             'estado' => $request->estado,
@@ -126,36 +176,37 @@ class InvestigadorController extends Controller
         return to_route('investigadores.horas', $investigador->id)->with('success', 'Horas de investigación asignadas exitosamente.');
     }
 
-    /**
-     * Update horas de investigación for a specific user.
-     */
-    public function updateHoras(Request $request, User $investigador, HorasInvestigacion $horasInvestigacion)
+    public function editHoras(User $investigador, $horasInvestigacionId)
     {
+        $horas = $investigador->horasInvestigacion()->findOrFail($horasInvestigacionId);
+        $periodos = Periodo::all(['id', 'nombre']);
+        return inertia('Investigadores/HorasEdit', [
+            'investigador' => $investigador,
+            'horas' => $horas,
+            'periodos' => $periodos,
+        ]);
+    }
+
+    public function updateHoras(Request $request, User $investigador, $horasInvestigacionId)
+    {
+        $horas = $investigador->horasInvestigacion()->findOrFail($horasInvestigacionId);
         $request->validate([
+            'periodo_id' => 'required|exists:periodos,id',
             'horas' => 'required|integer|min:0',
             'estado' => 'required|in:Activo,Inactivo',
-        ], [
-            'horas.required' => 'Las horas son requeridas.',
-            'horas.integer' => 'Las horas deben ser un número entero.',
-            'horas.min' => 'Las horas no pueden ser negativas.',
-            'estado.required' => 'El estado es requerido.',
-            'estado.in' => 'El estado debe ser Activo o Inactivo.',
         ]);
-
-        $horasInvestigacion->update([
+        $horas->update([
+            'periodo_id' => $request->periodo_id,
             'horas' => $request->horas,
             'estado' => $request->estado,
         ]);
-
         return to_route('investigadores.horas', $investigador->id)->with('success', 'Horas de investigación actualizadas exitosamente.');
     }
 
-    /**
-     * Remove horas de investigación for a specific user.
-     */
-    public function destroyHoras(User $investigador, HorasInvestigacion $horasInvestigacion)
+    public function destroyHoras(User $investigador, $horasInvestigacionId)
     {
-        $horasInvestigacion->delete();
-        return to_route('investigadores.horas', $investigador->id)->with('success', 'Horas de investigación eliminadas exitosamente.');
+        $horas = $investigador->horasInvestigacion()->findOrFail($horasInvestigacionId);
+        $horas->delete();
+        return to_route('investigadores.horas', $investigador->id)->with('success', 'Registro de horas eliminado exitosamente.');
     }
 } 

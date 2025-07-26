@@ -50,7 +50,7 @@ class ProductoInvestigativoController extends Controller
         $subTipos = SubTipoProducto::all();
 
         // Obtener usuarios para el multiselect (solo usuarios que tengan proyectos)
-        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
 
         return Inertia::render('Productos/Create', [
             'proyectos' => $proyectos,
@@ -59,7 +59,7 @@ class ProductoInvestigativoController extends Controller
             'usuarioLogueado' => [
                 'id' => Auth::id(),
                 'name' => Auth::user()->name,
-                'role' => Auth::user()->role,
+                'tipo' => Auth::user()->tipo,
             ],
         ]);
     }
@@ -188,7 +188,7 @@ class ProductoInvestigativoController extends Controller
         $subTipos = SubTipoProducto::all();
 
         // Obtener usuarios para el multiselect
-        $usuarios = User::whereIn('role', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'role']);
+        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
 
         return Inertia::render('Productos/Edit', [
             'producto' => $producto->load(['usuarios', 'proyecto', 'subTipoProducto']),

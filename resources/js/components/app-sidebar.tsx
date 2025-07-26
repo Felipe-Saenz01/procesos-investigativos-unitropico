@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, ReceiptText, UserRoundSearch } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -63,14 +63,14 @@ const NavParamsItems: NavItem[] = [
         icon: UserCheck,
     },
     {
-        title: 'Tipo Contrato',
-        href: route('parametros.permiso.index'),
-        icon: ReceiptText,
+        title: 'Tipo de Vinculación',
+        href: route('parametros.tipo-vinculacion.index'),
+        icon: Layers2,
     },
     {
-        title: 'Tipo de Profesor',
-        href: route('parametros.permiso.index'),
-        icon: UserRoundSearch,
+        title: 'Tipo de Contrato',
+        href: route('parametros.tipo-contrato.index'),
+        icon: LibraryBig,
     },
 ];
 

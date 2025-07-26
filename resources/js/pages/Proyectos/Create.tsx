@@ -27,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Usuario {
     id: number;
     name: string;
-    role: string;
+    tipo: string;
 }
 
 interface CreateProps {
@@ -38,7 +38,7 @@ interface CreateProps {
 export default function ProyectosCreate({ usuarios = [], usuarioLogueado }: CreateProps) {
     // Convertir usuarios a opciones para MultiSelect
     const usuarioOptions: Option[] = usuarios.map(u => ({ 
-        label: `${u.name} (${u.role})`, 
+        label: `${u.name} (${u.tipo})`, 
         value: u.id.toString() 
     }));
     const [tipoProyecto, setTipoProyecto] = useState<string>('en_formulacion');

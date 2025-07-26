@@ -44,7 +44,7 @@ interface Usuario {
     id: number;
     name: string;
     email: string;
-    role: string;
+    tipo: string;
 }
 
 interface Entrega {
@@ -115,9 +115,9 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
         });
     };
 
-    const getRoleBadgeVariant = (role: string) => {
-        switch (role) {
-            case 'Líder de Grupo':
+    const getTipoBadgeVariant = (tipo: string) => {
+        switch (tipo) {
+            case 'Lider Grupo':
                 return 'default';
             case 'Investigador':
                 return 'secondary';
@@ -281,8 +281,8 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                                         <p className="font-medium">{usuario.name}</p>
                                                         <p className="text-sm text-gray-500">{usuario.email}</p>
                                                     </div>
-                                                    <Badge variant={getRoleBadgeVariant(usuario.role)}>
-                                                        {usuario.role}
+                                                    <Badge variant={getTipoBadgeVariant(usuario.tipo)}>
+                                                        {usuario.tipo}
                                                     </Badge>
                                                 </div>
                                             ))}

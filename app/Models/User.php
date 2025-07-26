@@ -26,6 +26,9 @@ class User extends Authenticatable
         'password',
         'tipo',
         'grupo_investigacion_id',
+        'tipo_vinculacion_id',
+        'tipo_contrato_id',
+        'cedula',
     ];
 
     /**
@@ -81,5 +84,15 @@ class User extends Authenticatable
     public function productosInvestigativos()
     {
         return $this->belongsToMany(ProductoInvestigativo::class, 'producto_investigativo_user', 'user_id', 'producto_investigativo_id');
+    }
+
+    public function tipoVinculacion()
+    {
+        return $this->belongsTo(TipoVinculacion::class, 'tipo_vinculacion_id');
+    }
+
+    public function tipoContrato()
+    {
+        return $this->belongsTo(TipoContrato::class, 'tipo_contrato_id');
     }
 }

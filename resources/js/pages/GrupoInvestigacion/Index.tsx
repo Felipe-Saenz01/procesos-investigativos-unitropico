@@ -19,7 +19,7 @@ interface Usuario {
     id: number;
     name: string;
     email: string;
-    role: string;
+    tipo: string;
     grupo_investigacion_id: number;
 }
 
@@ -41,14 +41,20 @@ interface PageProps {
         success?: string;
         error?: string;
     };
+    auth?: {
+        user: {
+            permissions: string[];
+        };
+    };
 }
 
 export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoInvestigacionProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
+    // const puedeCrearUsuario = auth?.user?.permissions?.includes('crear-usuario');
 
-    const getRoleBadge = (role: string) => {
-        if (role === 'Lider Grupo') {
+    const getTipoBadge = (tipo: string) => {
+        if (tipo === 'Lider Grupo') {
             return <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">Líder Grupo</Badge>;
         }
         return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Investigador</Badge>;
@@ -58,11 +64,10 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
         if (usuarios.length === 0) {
             return <span className="text-gray-400">Sin investigadores</span>;
         }
-        
-        return usuarios.map((usuario, index) => (
+        return usuarios.map((usuario) => (
             <div key={usuario.id} className="flex items-center gap-2 mb-1">
                 <span className="text-sm">{usuario.name}</span>
-                {getRoleBadge(usuario.role)}
+                {getTipoBadge(usuario.tipo)}
             </div>
         ));
     };
@@ -72,10 +77,15 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
             <Head title="Grupos de Investigación" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <div className='flex flex-row items-center'>
+                    <div className='flex flex-row items-center justify-between p-5'>
                         <h1 className='text-2xl font-bold m-5'>Grupos de Investigación</h1>
+                        {/* {puedeCrearUsuario && (
+                          <Link href={route('usuarios.create')} prefetch>
+                            <Button className="ml-4">Agregar Investigador</Button>
+                          </Link>
+                        )} */}
                         <Link href={route('grupo-investigacion.create')} prefetch>
-                            <Button><Plus /></Button>
+                            <Button><Plus /> Nuevo Grupo</Button>
                         </Link>
                     </div>
                     <div className='p-5'>

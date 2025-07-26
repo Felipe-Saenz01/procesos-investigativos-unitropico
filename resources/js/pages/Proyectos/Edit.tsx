@@ -26,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Usuario {
     id: number;
     name: string;
-    role: string;
+    tipo: string;
 }
 
 interface ProyectoInvestigativo {
@@ -65,7 +65,7 @@ interface ProyectoEditProps {
 export default function ProyectoEdit({ proyecto, usuarios, usuariosSeleccionados, actividadesUsuario }: ProyectoEditProps) {
     // Convertir usuarios a opciones para MultiSelect
     const usuarioOptions: Option[] = usuarios.map(u => ({ 
-        label: `${u.name} (${u.role})`, 
+        label: `${u.name} (${u.tipo})`, 
         value: u.id.toString() 
     }));
     

@@ -20,35 +20,29 @@ interface TipoVinculacion {
 }
 
 interface Props {
-  investigador: {
-    id: number;
-    name: string;
-    email: string;
-    cedula: string;
-    tipo: string;
-    grupo_investigacion_id: number | null;
-    tipo_contrato_id?: number | null;
-    tipo_vinculacion_id?: number | null;
-  };
+  isAdmin: boolean;
   grupos: Grupo[];
+  grupoLider?: number;
   tipoContratos: TipoContrato[];
   tipoVinculaciones: TipoVinculacion[];
 }
 
 const breadcrumbs = [
   { title: 'Investigadores', href: '/investigadores' },
-  { title: 'Editar Investigador', href: '#' },
+  { title: 'Nuevo Investigador', href: '/investigadores/create' },
 ];
 
-export default function InvestigadorEdit({ investigador, grupos, tipoContratos, tipoVinculaciones }: Props) {
-  const { data, setData, put, processing, errors, reset } = useForm({
-    name: investigador.name,
-    email: investigador.email,
-    cedula: investigador.cedula,
-    grupo_investigacion_id: investigador.grupo_investigacion_id || '',
-    tipo_contrato_id: investigador.tipo_contrato_id || '',
-    tipo_vinculacion_id: investigador.tipo_vinculacion_id || '',
+export default function InvestigadorCreate({ isAdmin, grupos, grupoLider, tipoContratos, tipoVinculaciones }: Props) {
+  const { data, setData, post, processing, errors, reset } = useForm({
+    name: '',
+    email: '',
+    cedula: '',
+    grupo_investigacion_id: isAdmin ? '' : grupoLider || '',
+    tipo_contrato_id: '',
+    tipo_vinculacion_id: '',
   });
+
+  const tipo = isAdmin ? 'Lider Grupo' : 'Investigador';
 
   const grupoOptions = grupos.map(g => ({ value: g.id, label: g.nombre }));
   const contratoOptions = tipoContratos.map(tc => ({ value: tc.id, label: tc.nombre }));
@@ -56,20 +50,20 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    put(route('investigadores.update', investigador.id), {
+    post(route('investigadores.store'), {
       onSuccess: () => reset(),
     });
   };
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Editar Investigador" />
+      <Head title="Nuevo Investigador" />
       <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
         <form onSubmit={handleSubmit} className='sm:w-4/5'>
           <Card>
             <CardHeader>
               <CardTitle className='text-2xl flex justify-between items-center'>
-                Editar Investigador
+                Nuevo Investigador
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -119,7 +113,7 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
                   <Label htmlFor="tipo">Tipo</Label>
                   <Input
                     id="tipo"
-                    value={investigador.tipo}
+                    value={tipo}
                     type='text'
                     name='tipo'
                     disabled
@@ -127,13 +121,21 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
                 </div>
                 <div>
                   <Label htmlFor="grupo">Grupo de Investigación</Label>
-                  <SearchSelect
-                    options={grupoOptions}
-                    value={data.grupo_investigacion_id}
-                    onValueChange={value => setData('grupo_investigacion_id', value)}
-                    placeholder="Selecciona un grupo..."
-                    name="grupo_investigacion_id"
-                  />
+                  {isAdmin ? (
+                    <SearchSelect
+                      options={grupoOptions}
+                      value={data.grupo_investigacion_id}
+                      onValueChange={value => setData('grupo_investigacion_id', value)}
+                      placeholder="Selecciona un grupo..."
+                      name="grupo_investigacion_id"
+                    />
+                  ) : (
+                    <Input
+                      value={grupos.find(g => g.id === grupoLider)?.nombre || ''}
+                      type='text'
+                      disabled
+                    />
+                  )}
                   {errors.grupo_investigacion_id && <p className="text-red-500 text-xs mt-1">{errors.grupo_investigacion_id}</p>}
                 </div>
                 <div>
@@ -141,7 +143,7 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
                   <SearchSelect
                     options={contratoOptions}
                     value={data.tipo_contrato_id}
-                    onValueChange={value => setData('tipo_contrato_id', value)}
+                    onValueChange={value => setData('tipo_contrato_id', String(value))}
                     placeholder="Selecciona un tipo de contrato..."
                     name="tipo_contrato_id"
                   />
@@ -152,7 +154,7 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
                   <SearchSelect
                     options={vinculacionOptions}
                     value={data.tipo_vinculacion_id}
-                    onValueChange={value => setData('tipo_vinculacion_id', value)}
+                    onValueChange={value => setData('tipo_vinculacion_id', String(value))}
                     placeholder="Selecciona un tipo de vinculación..."
                     name="tipo_vinculacion_id"
                   />
@@ -161,7 +163,7 @@ export default function InvestigadorEdit({ investigador, grupos, tipoContratos, 
               </div>
             </CardContent>
             <CardFooter className='flex justify-end'>
-              <Button type="submit" disabled={processing}>Actualizar</Button>
+              <Button type="submit" disabled={processing}>Crear</Button>
               <Button asChild variant="secondary">
                 <Link href={route('investigadores.index')}>Cancelar</Link>
               </Button>
