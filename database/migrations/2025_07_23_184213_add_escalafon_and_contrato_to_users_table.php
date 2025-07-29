@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('tipo_vinculacion_id')->nullable()->constrained('tipo_vinculacions');
+            $table->foreignId('escalafon_profesoral_id')->nullable()->constrained('escalafon_profesorals');
             $table->foreignId('tipo_contrato_id')->nullable()->constrained('tipo_contratos');
         });
     }
@@ -23,9 +23,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropForeign(['tipo_vinculacion_id']);
+            $table->dropForeign(['escalafon_profesoral_id']);
             $table->dropForeign(['tipo_contrato_id']);
-            $table->dropColumn('tipo_vinculacion_id');
+            $table->dropColumn('escalafon_profesoral_id');
             $table->dropColumn('tipo_contrato_id');
         });
     }

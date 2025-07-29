@@ -39,6 +39,11 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    tipo?: string;
+    cedula?: string;
+    grupo_investigacion_id?: number | null;
+    tipo_contrato_id?: number | null;
+    escalafon_profesoral_id?: number | null;
     roles?: string[];
     permissions?: string[];
     [key: string]: unknown; // This allows for additional properties...

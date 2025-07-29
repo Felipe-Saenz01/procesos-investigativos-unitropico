@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tipo_vinculacions', function (Blueprint $table) {
+        Schema::create('escalafon_profesorals', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
             $table->integer('horas_semanales')->nullable();
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tipo_vinculacions');
+        Schema::dropIfExists('escalafon_profesorals');
     }
 };

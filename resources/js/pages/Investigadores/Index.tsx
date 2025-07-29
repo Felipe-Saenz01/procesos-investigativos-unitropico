@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { CircleCheckBig, CircleX, Clock, Plus, SquarePen } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -38,16 +39,11 @@ interface PageProps {
         success?: string;
         error?: string;
     };
-    auth?: {
-        user: {
-            permissions: string[];
-        };
-    };
 }
 
 export default function InvestigadoresIndex({ investigadores }: InvestigadoresProps) {
-    const { flash, auth } = usePage().props as PageProps;
-    const permisos = auth?.user?.permissions;
+    const { flash } = usePage().props as PageProps;
+    const { hasPermission } = usePermissions();
 
     const getRoleBadge = (tipo: string) => {
         if (tipo === 'Lider Grupo') {
@@ -56,6 +52,9 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
         return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Investigador</Badge>;
     };
 
+    // Verificar si debe mostrar la columna de acciones
+    const mostrarAcciones = hasPermission('ver-horas-investigacion') || hasPermission('editar-usuario');
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Investigadores" />
@@ -63,7 +62,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <div className='flex flex-row items-center justify-between p-5'>
                         <h1 className='text-2xl font-bold m-5'>Investigadores</h1>
-                        {permisos?.includes('crear-usuario') && (
+                        {hasPermission('crear-usuario') && (
                           <Link href={route('investigadores.create')} prefetch>
                             <Button className="ml-4"><Plus /> Nuevo Investigador</Button>
                           </Link>
@@ -95,8 +94,8 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                         <TableHead className='w-1/4'>Correo</TableHead>
                                         <TableHead className='w-1/6'>Tipo</TableHead>
                                         <TableHead className='w-1/4'>Grupo de Investigación</TableHead>
-                                        {(permisos?.includes('ver-horas-investigacion') || permisos?.includes('editar-usuario')) && (
-                                        <TableHead className='w-1/5'>Acciones</TableHead>
+                                        {mostrarAcciones && (
+                                            <TableHead className='w-1/5'>Acciones</TableHead>
                                         )}
                                     </TableRow>
                                 </TableHeader>
@@ -114,22 +113,24 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                                     <span className="text-gray-400">Sin grupo asignado</span>
                                                 }
                                             </TableCell>
-                                            <TableCell className='w-1/5 flex gap-2 justify-end'>
-                                                {permisos?.includes('editar-usuario') && (
-                                                <Link href={route('investigadores.edit', investigador.id)} prefetch>
-                                                    <Button variant="outline" size="sm" title="Editar investigador">
-                                                        <SquarePen className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                )}
-                                                {permisos?.includes('ver-horas-investigacion') && (
-                                                <Link href={route('investigadores.horas', investigador.id)} prefetch>
-                                                    <Button variant="outline" size="sm" title="Ver horas de investigación">
-                                                        <Clock className="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                                )}
-                                            </TableCell>
+                                            {mostrarAcciones && (
+                                                <TableCell className='w-1/5 flex gap-2 justify-end'>
+                                                    {hasPermission('editar-usuario') && (
+                                                        <Link href={route('investigadores.edit', investigador.id)} prefetch>
+                                                            <Button variant="outline" size="sm" title="Editar investigador">
+                                                                <SquarePen className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {hasPermission('ver-horas-investigacion') && (
+                                                        <Link href={route('investigadores.horas', investigador.id)} prefetch>
+                                                            <Button variant="outline" size="sm" title="Ver horas de investigación">
+                                                                <Clock className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))}
                                 </TableBody>

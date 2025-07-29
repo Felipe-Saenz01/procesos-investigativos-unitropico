@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 use App\Models\TipoContrato;
-use App\Models\TipoVinculacion;
+use App\Models\EscalafonProfesoral;
 
 class InvestigadorController extends Controller
 {
@@ -55,14 +55,14 @@ class InvestigadorController extends Controller
         $grupos = GrupoInvestigacion::all(['id', 'nombre']);
         $grupoLider = $isLider ? $user->grupo_investigacion_id : null;
         $tipoContratos = TipoContrato::all(['id', 'nombre']);
-        $tipoVinculaciones = TipoVinculacion::all(['id', 'nombre']);
+        $escalafonesProfesoral = EscalafonProfesoral::all(['id', 'nombre']);
         return inertia('Investigadores/Create', [
             'isAdmin' => $isAdmin,
             'isLider' => $isLider,
             'grupos' => $grupos,
             'grupoLider' => $grupoLider,
             'tipoContratos' => $tipoContratos,
-            'tipoVinculaciones' => $tipoVinculaciones,
+            'escalafonesProfesoral' => $escalafonesProfesoral,
         ]);
     }
 
@@ -78,7 +78,7 @@ class InvestigadorController extends Controller
             'cedula' => 'required|digits_between:6,15|unique:users,cedula',
             'grupo_investigacion_id' => $isAdmin ? 'required|exists:grupo_investigacions,id' : 'nullable',
             'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
-            'tipo_vinculacion_id' => 'required|exists:tipo_vinculacions,id',
+            'escalafon_profesoral_id' => 'required|exists:escalafon_profesorals,id',
         ]);
 
         if ($isAdmin) {
@@ -103,12 +103,12 @@ class InvestigadorController extends Controller
     {
         $grupos = GrupoInvestigacion::all(['id', 'nombre']);
         $tipoContratos = TipoContrato::all(['id', 'nombre']);
-        $tipoVinculaciones = TipoVinculacion::all(['id', 'nombre']);
+        $escalafonesProfesoral = EscalafonProfesoral::all(['id', 'nombre']);
         return inertia('Investigadores/Edit', [
             'investigador' => $investigador,
             'grupos' => $grupos,
             'tipoContratos' => $tipoContratos,
-            'tipoVinculaciones' => $tipoVinculaciones,
+            'escalafonesProfesoral' => $escalafonesProfesoral,
         ]);
     }
 
@@ -120,7 +120,7 @@ class InvestigadorController extends Controller
             'cedula' => 'required|digits_between:6,15|unique:users,cedula,' . $investigador->id,
             'grupo_investigacion_id' => 'nullable|exists:grupo_investigacions,id',
             'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
-            'tipo_vinculacion_id' => 'required|exists:tipo_vinculacions,id',
+            'escalafon_profesoral_id' => 'required|exists:escalafon_profesorals,id',
         ]);
         $investigador->update($data);
         return to_route('investigadores.index')->with('success', 'Investigador actualizado correctamente');

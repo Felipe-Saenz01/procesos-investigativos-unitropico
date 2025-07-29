@@ -6,7 +6,7 @@ use App\Models\GrupoInvestigacion;
 use App\Models\SubTipoProducto;
 use App\Models\TipoContrato;
 use App\Models\TipoProducto;
-use App\Models\TipoVinculacion;
+use App\Models\EscalafonProfesoral;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -95,7 +95,7 @@ class DatabaseSeeder extends Seeder
 
         ];
 
-        $tiposVinculacion = [
+        $escalafonesProfesoral = [
             [
                 'nombre' => 'Profesor Auxiliar',
                 'horas_semanales' => 13,
@@ -153,10 +153,10 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        foreach ($tiposVinculacion as $tipoVinculacion) {
-            TipoVinculacion::create([
-                'nombre' => $tipoVinculacion['nombre'],
-                'horas_semanales' => $tipoVinculacion['horas_semanales'],
+        foreach ($escalafonesProfesoral as $escalafonProfesoral) {
+            EscalafonProfesoral::create([
+                'nombre' => $escalafonProfesoral['nombre'],
+                'horas_semanales' => $escalafonProfesoral['horas_semanales'],
             ]);
         }
 

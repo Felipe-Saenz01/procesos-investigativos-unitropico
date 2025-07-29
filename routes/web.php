@@ -6,6 +6,7 @@ use App\Http\Controllers\GrupoInvestigacionController;
 use App\Http\Controllers\InvestigadorController;
 use App\Http\Controllers\Parametros\PermisoController;
 use App\Http\Controllers\Parametros\RolController;
+use App\Http\Controllers\Parametros\EscalafonProfesoralController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\ProductoInvestigativoController;
 use App\Http\Controllers\ProyectoInvestigativoController;
@@ -33,7 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('periodo', PeriodoController::class);
         Route::resource('rol', RolController::class);
         Route::resource('permiso', PermisoController::class);
-        Route::resource('tipo-vinculacion', \App\Http\Controllers\Parametros\TipoVinculacionController::class);
+        Route::resource('escalafon-profesoral', EscalafonProfesoralController::class);
         Route::resource('tipo-contrato', \App\Http\Controllers\Parametros\TipoContratoController::class);
         Route::get('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'permisos'])->name('rol.permisos');
         Route::put('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'actualizarPermisos'])->name('rol.permisos.update');
