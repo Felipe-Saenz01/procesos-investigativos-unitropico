@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchSelect } from '@/components/form-search-select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -12,59 +11,37 @@ import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Tipos Productos',
-        href: route('parametros.tipo-producto.index'),
+        title: 'Actividades de Investigación',
+        href: route('parametros.actividades-investigacion.index'),
     },
     {
-        title: 'Editar Tipo Producto',
-        href: '#',
+        title: 'Crear Nueva Actividad',
+        href: route('parametros.actividades-investigacion.create'),
     }
 ];
 
-interface ActividadInvestigacion {
-    id: number;
-    nombre: string;
-}
-
-interface TipoProductoProps {
-    id: number;
-    nombre: string;
-    actividad_investigacion_id: number;
-    actividad_investigacion?: ActividadInvestigacion;
-}
-
-interface Props {
-    tipoProducto: TipoProductoProps;
-    actividadesInvestigacion: ActividadInvestigacion[];
-}
-
-export default function Edit({ tipoProducto, actividadesInvestigacion }: Props) {
-    const { data, setData, put, errors } = useForm({
-        id: tipoProducto.id,
-        nombre: tipoProducto.nombre,
-        actividad_investigacion_id: tipoProducto.actividad_investigacion_id || ''
+export default function Create() {
+    const { data, setData, post, errors, reset } = useForm({
+        nombre: '',
+        horas_maximas: 1
     });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(route('parametros.tipo-producto.update', data.id));
+        post(route('parametros.actividades-investigacion.store'), {
+            onSuccess: () => reset()
+        });
     };
-
-    // Convertir actividades a formato de opciones para SearchSelect
-    const actividadOptions = actividadesInvestigacion.map(actividad => ({
-        value: actividad.id,
-        label: actividad.nombre
-    }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Editar Tipo Producto" />
+            <Head title="Nueva Actividad de Investigación" />
             <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
                 <form onSubmit={handleSubmit} className='sm:w-2/5'>
                     <Card className=''>
                         <CardHeader>
                             <CardTitle className='text-2xl flex justify-between items-center'>
-                                Editar Tipo Producto
+                                Crear una Nueva Actividad de Investigación
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -83,7 +60,7 @@ export default function Edit({ tipoProducto, actividadesInvestigacion }: Props) 
                             }
                             <div className="space-y-4">
                                 <div>
-                                    <Label htmlFor="nombre">Nombre del Tipo Producto</Label>
+                                    <Label htmlFor="nombre">Nombre de la Actividad</Label>
                                     <Input
                                         id='nombre'
                                         className="mt-1"
@@ -91,30 +68,33 @@ export default function Edit({ tipoProducto, actividadesInvestigacion }: Props) 
                                         onChange={(e) => setData('nombre', e.target.value)}
                                         type='text'
                                         name='nombre'
-                                        placeholder="Ej: Generación de Nuevo Conocimiento"
+                                        placeholder="Ej: Consolidación de Productos de Investigación"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="actividad_investigacion_id">Actividad de Investigación</Label>
-                                    <SearchSelect
-                                        options={actividadOptions}
-                                        value={data.actividad_investigacion_id}
-                                        onValueChange={(value) => setData('actividad_investigacion_id', String(value))}
-                                        placeholder="Seleccionar actividad..."
-                                        searchPlaceholder="Buscar actividad..."
-                                        name="actividad_investigacion_id"
+                                    <Label htmlFor="horas_maximas">Horas Máximas</Label>
+                                    <Input
+                                        id='horas_maximas'
+                                        className="mt-1"
+                                        value={data.horas_maximas}
+                                        onChange={(e) => setData('horas_maximas', parseInt(e.target.value) || 1)}
+                                        type='number'
+                                        name='horas_maximas'
+                                        min="1"
+                                        max="100"
+                                        placeholder="8"
                                     />
                                 </div>
                             </div>
                         </CardContent>
                         <CardFooter className='flex justify-end'>
-                            <Link href={route('parametros.tipo-producto.index')}>
+                            <Link href={route('parametros.actividades-investigacion.index')}>
                                 <Button type='button' variant="outline" className='mr-3'>
                                     Cancelar
                                 </Button>
                             </Link>
                             <Button type='submit' className='bg-primary hover:bg-primary/90'>
-                                Actualizar Tipo Producto
+                                Crear Actividad
                             </Button>
                         </CardFooter>
                     </Card>
@@ -122,4 +102,4 @@ export default function Edit({ tipoProducto, actividadesInvestigacion }: Props) 
             </div>
         </AppLayout>
     );
-}
+} 

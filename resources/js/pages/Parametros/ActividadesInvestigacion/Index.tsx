@@ -9,27 +9,21 @@ import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Subtipos Productos',
-        href: '/parametros/subtipo-producto',
+        title: 'Actividades de Investigación',
+        href: '/parametros/actividades-investigacion',
     }
 ];
 
-interface TipoProducto {
+interface ActividadesInvestigacion {
     id: number;
     nombre: string;
-}
-
-interface SubTipoProducto {
-    id: number;
-    nombre: string;
-    tipo_producto_id: number;
-    tipo_producto: TipoProducto;
+    horas_maximas: number;
     created_at: string;
     updated_at: string;
 }
 
-interface SubTipoProductoProps {
-    subTiposProductos: SubTipoProducto[];
+interface ActividadesInvestigacionProps {
+    actividadesInvestigacion: ActividadesInvestigacion[];
 }
 
 interface PageProps {
@@ -39,19 +33,19 @@ interface PageProps {
     };
 }
 
-export default function SubTipoProductoIndex({ subTiposProductos }: SubTipoProductoProps) {
+export default function ActividadesInvestigacionIndex({ actividadesInvestigacion }: ActividadesInvestigacionProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Subtipos Productos" />
+            <Head title="Actividades de Investigación" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <div className='flex flex-row items-center justify-between p-5'>
-                        <h1 className='text-2xl font-bold'>Subtipos de Productos Investigativos</h1>
-                        <Link href={route('parametros.subtipo-producto.create')} prefetch>
-                            <Button><Plus /> Nuevo Subtipo de Producto</Button>
+                        <h1 className='text-2xl font-bold m-5'>Actividades de Investigación</h1>
+                        <Link href={route('parametros.actividades-investigacion.create')} prefetch>
+                            <Button className="ml-4"><Plus /> Nueva Actividad</Button>
                         </Link>
                     </div>
                     <div className='p-5'>
@@ -71,32 +65,38 @@ export default function SubTipoProductoIndex({ subTiposProductos }: SubTipoProdu
                                 </AlertTitle>
                             </Alert>
                         }
-                        {subTiposProductos.length === 0 && <p className='mx-5 text-gray-400'>No hay subtipos de productos registrados.</p>}
-                        {subTiposProductos.length > 0 &&
-                            <Table className='table-auto'>
+                        {actividadesInvestigacion.length === 0 && <p className='mx-5 text-gray-400'>No hay actividades de investigación registradas.</p>}
+                        {actividadesInvestigacion.length > 0 &&
+                            <Table className=''>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className='font-bold'>Nombre</TableHead>
-                                        <TableHead className='font-bold'>Tipo de Producto</TableHead>
-                                        <TableHead className='font-bold'>Acciones</TableHead>
+                                        <TableHead className='w-1/3'>Nombre</TableHead>
+                                        <TableHead className='w-1/6'>Horas Máximas</TableHead>
+                                        <TableHead className='w-1/4'>Fecha Creación</TableHead>
+                                        <TableHead className='w-1/4'>Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {subTiposProductos.map((subTipoProducto) => (
-                                        <TableRow key={subTipoProducto.id}>
-                                            <TableCell className='whitespace-normal break-words'>{subTipoProducto.nombre}</TableCell>
-                                            <TableCell className='whitespace-normal break-words'>{subTipoProducto.tipo_producto.nombre}</TableCell>
-                                            <TableCell className=' flex gap-2 justify-end'>
-                                                <Link href={route('parametros.subtipo-producto.edit', subTipoProducto.id)} prefetch>
-                                                    <Button variant="outline"><SquarePen /></Button>
+                                    {actividadesInvestigacion.map((actividad) => (
+                                        <TableRow key={actividad.id}>
+                                            <TableCell className='w-1/3 font-medium'>{actividad.nombre}</TableCell>
+                                            <TableCell className='w-1/6'>{actividad.horas_maximas} horas</TableCell>
+                                            <TableCell className='w-1/4'>{new Date(actividad.updated_at).toLocaleDateString()}</TableCell>
+                                            <TableCell className='w-1/4 flex gap-2 justify-end'>
+                                                <Link href={route('parametros.actividades-investigacion.edit', actividad.id)} prefetch>
+                                                    <Button variant="outline" size="sm" title="Editar actividad">
+                                                        <SquarePen className="h-4 w-4" />
+                                                    </Button>
                                                 </Link>
                                                 <form onSubmit={(e: FormEvent) => {
                                                     e.preventDefault();
-                                                    if (confirm('¿Estás seguro de que deseas eliminar este subtipo de producto?')) {
-                                                        destroy(route('parametros.subtipo-producto.destroy', subTipoProducto.id));
+                                                    if (confirm('¿Estás seguro de que deseas eliminar esta actividad de investigación?')) {
+                                                        destroy(route('parametros.actividades-investigacion.destroy', actividad.id));
                                                     }
                                                 }}>
-                                                    <Button type='submit' variant='destructive'><Trash /></Button>
+                                                    <Button type='submit' variant='destructive' size="sm" title="Eliminar actividad">
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
                                                 </form>
                                             </TableCell>
                                         </TableRow>
@@ -109,4 +109,4 @@ export default function SubTipoProductoIndex({ subTiposProductos }: SubTipoProdu
             </div>
         </AppLayout>
     );
-}
+} 

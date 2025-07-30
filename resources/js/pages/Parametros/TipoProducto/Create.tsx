@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchSelect } from '@/components/form-search-select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -20,63 +21,97 @@ const breadcrumbs: BreadcrumbItem[] = [
     }
 ];
 
-// interface TipoProductoForm {
-//     nombre: string;
-// }
+interface ActividadInvestigacion {
+    id: number;
+    nombre: string;
+}
 
-export default function Create() {
+interface CreateProps {
+    actividadesInvestigacion: ActividadInvestigacion[];
+}
 
-    const {data, setData,post, errors, reset } = useForm({nombre: '' } );
-
+export default function Create({ actividadesInvestigacion }: CreateProps) {
+    const { data, setData, post, errors, reset } = useForm({
+        nombre: '',
+        actividad_investigacion_id: ''
+    });
 
     const handleSubmit = (e: FormEvent) => {
-        e.preventDefault()
+        e.preventDefault();
         post(route('parametros.tipo-producto.store'), {
-            onSuccess:() => reset()
+            onSuccess: () => reset()
         });
-    }
+    };
 
- 
+    // Convertir actividades a formato de opciones para SearchSelect
+    const actividadOptions = actividadesInvestigacion.map(actividad => ({
+        value: actividad.id,
+        label: actividad.nombre
+    }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Nuevo Tipo Producto" />
             <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
-            <form onSubmit={handleSubmit} className='sm:w-2/5'>
-                <Card className=''>
-                    <CardHeader>
-                        <CardTitle className='text-2xl flex justify-between items-center'>
-                            Crear un Nuevo Tipo Producto
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent >
-                        {Object.keys(errors).length > 0 && 
-                        // <p className='text-red-500 text-sm mb-3'> Hay errores {Object.keys(errors).length}</p>
-                        <Alert variant='destructive' className='mb-3 w-full'>
-                            <CircleAlert />
-                            <AlertTitle>Por favor corrige los siguientes errores:</AlertTitle>
-                            <AlertDescription>
-                                <ul className='list-disc pl-5'>
-                                    {Object.values(errors).map((error, index) => (
-                                        <li key={index} className='text-red-500 text-sm'>{error}</li>
-                                    ))}
-                                </ul>
-                            </AlertDescription>
-                            
-                        </Alert>
-                        }
-                        <Label htmlFor="nombre" >Nombre del Tipo Producto</Label>
-                        <Input id='nombre' className="mb-3" value={data.nombre} onChange={(e) => setData('nombre', e.target.value)} type='text' name='nombre' />
-                        
-                    </CardContent>
-                    <CardFooter className='flex justify-end'>
-                        <Button type='button' variant="destructive" className='mr-3' ><Link href={route('parametros.tipo-producto.index')}>Cancelar</Link></Button>
-                        <Button type='submit' className='bg-primary hover:bg-primary/90'>Crear</Button>
-                    </CardFooter>
-
-                </Card>
-            </form>
-
+                <form onSubmit={handleSubmit} className='sm:w-2/5'>
+                    <Card className=''>
+                        <CardHeader>
+                            <CardTitle className='text-2xl flex justify-between items-center'>
+                                Crear un Nuevo Tipo Producto
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {Object.keys(errors).length > 0 &&
+                                <Alert variant='destructive' className='mb-3 w-full'>
+                                    <CircleAlert />
+                                    <AlertTitle>Por favor corrige los siguientes errores:</AlertTitle>
+                                    <AlertDescription>
+                                        <ul className='list-disc pl-5'>
+                                            {Object.values(errors).map((error, index) => (
+                                                <li key={index} className='text-red-500 text-sm'>{error}</li>
+                                            ))}
+                                        </ul>
+                                    </AlertDescription>
+                                </Alert>
+                            }
+                            <div className="space-y-4">
+                                <div>
+                                    <Label htmlFor="nombre">Nombre del Tipo Producto</Label>
+                                    <Input
+                                        id='nombre'
+                                        className="mt-1"
+                                        value={data.nombre}
+                                        onChange={(e) => setData('nombre', e.target.value)}
+                                        type='text'
+                                        name='nombre'
+                                        placeholder="Ej: Generación de Nuevo Conocimiento"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="actividad_investigacion_id">Actividad de Investigación</Label>
+                                    <SearchSelect
+                                        options={actividadOptions}
+                                        value={data.actividad_investigacion_id}
+                                        onValueChange={(value) => setData('actividad_investigacion_id', String(value))}
+                                        placeholder="Seleccionar actividad..."
+                                        searchPlaceholder="Buscar actividad..."
+                                        name="actividad_investigacion_id"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                        <CardFooter className='flex justify-end'>
+                            <Link href={route('parametros.tipo-producto.index')}>
+                                <Button type='button' variant="outline" className='mr-3'>
+                                    Cancelar
+                                </Button>
+                            </Link>
+                            <Button type='submit' className='bg-primary hover:bg-primary/90'>
+                                Crear Tipo Producto
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </form>
             </div>
         </AppLayout>
     );

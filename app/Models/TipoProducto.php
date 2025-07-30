@@ -12,5 +12,16 @@ class TipoProducto extends Model
 
     protected $fillable = [
         'nombre',
+        'actividad_investigacion_id',
     ];
+
+    public function actividadInvestigacion()
+    {
+        return $this->belongsTo(ActividadesInvestigacion::class);
+    }
+
+    public function subTiposProductos()
+    {
+        return $this->hasMany(SubTipoProducto::class);
+    }
 }

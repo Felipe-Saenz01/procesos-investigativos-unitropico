@@ -6,7 +6,7 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity } from 'lucide-react';
 import AppLogo from './app-logo';
 
 // Extender NavItem para incluir permisos requeridos
@@ -54,6 +54,12 @@ const NavParamsItems: NavItemWithPermissions[] = [
         requiredPermission: 'ver-parametros',
     },
     {
+        title: 'Actividades de Investigación',
+        href: route('parametros.actividades-investigacion.index'),
+        icon: Activity,
+        requiredPermission: 'ver-parametros',
+    },
+    {
         title: 'Tipos Productos',
         href: route('parametros.tipo-producto.index'),
         icon: Layers2,
@@ -69,13 +75,13 @@ const NavParamsItems: NavItemWithPermissions[] = [
         title: 'Roles',
         href: route('parametros.rol.index'),
         icon: Users,
-        requiredPermission: 'ver-rol',
+        requiredPermission: 'ver-roles',
     },
     {
         title: 'Permisos',
         href: route('parametros.permiso.index'),
         icon: UserCheck,
-        requiredPermission: 'ver-permiso',
+        requiredPermission: 'ver-permisos',
     },
     {
         title: 'Escalafón Profesoral',

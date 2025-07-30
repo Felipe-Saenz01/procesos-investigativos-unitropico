@@ -15,10 +15,12 @@ class PermisoController extends Controller
         'proyecto',
         'producto',
         'entrega',
-        'rol',
-        'permiso',
+        'roles',
+        'permisos',
         'horas-investigacion',
-        'parametros'
+        'parametros',
+
+
     ];
     // const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'asignar', 'aprobar', 'exportar'];
     const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'revisar', 'aprobar'];

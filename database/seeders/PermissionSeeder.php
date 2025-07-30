@@ -19,8 +19,11 @@ class PermissionSeeder extends Seeder
             'producto',
             'entrega',
             'parametros',
-            'rol',
-            'permiso',
+            'roles',
+            'permisos',
+            'actividad-investigacion',
+            'tipo-contrato',
+            'escalafon-profresoral',
         ];
         $acciones = [
             'ver',

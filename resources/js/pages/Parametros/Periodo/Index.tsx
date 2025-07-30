@@ -60,10 +60,10 @@ export default function PeriodoIndex({ periodos }: PeriodoProps) {
             <Head title="Períodos" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <div className='flex flex-row items-center'>
-                        <h1 className='text-2xl font-bold m-5'>Períodos Académicos</h1>
+                    <div className='flex flex-row items-center justify-between p-5'>
+                        <h1 className='text-2xl font-bold'>Períodos Académicos</h1>
                         <Link href={route('parametros.periodo.create')} prefetch>
-                            <Button><Plus /></Button>
+                            <Button><Plus /> Nuevo Período</Button>
                         </Link>
                     </div>
                     <div className='p-5'>

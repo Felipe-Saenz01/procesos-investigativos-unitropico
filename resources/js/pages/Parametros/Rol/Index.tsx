@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2, Shield } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
@@ -39,16 +39,13 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
           </div>
           <div className='p-5'>
             <Card>
-              <CardHeader>
-                <CardTitle>Lista de Roles</CardTitle>
-              </CardHeader>
               <CardContent>
-                <Table>
+                <Table className='table-auto'>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Permisos</TableHead>
-                      <TableHead>Acciones</TableHead>
+                      <TableHead className='font-bold'>Nombre</TableHead>
+                      <TableHead className='font-bold'>Permisos</TableHead>
+                      <TableHead className='font-bold'>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -58,10 +55,10 @@ export default function RolesIndex({ roles }: RolesIndexProps) {
                         <TableCell>
                           {rol.permissions && rol.permissions.length > 0 && (
                             <>
-                              {rol.permissions.slice(0, 2).map((permiso) => (
+                              {rol.permissions.slice(0, 4).map((permiso) => (
                                 <span key={permiso.id} className="inline-block bg-gray-200 rounded px-2 py-1 mr-1 text-xs">{permiso.name}</span>
                               ))}
-                              {rol.permissions.length > 2 && (
+                              {rol.permissions.length > 4 && (
                                 <span className="inline-block text-xs text-gray-500">.. {rol.permissions.length - 4} más</span>
                               )}
                             </>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\TipoProducto;
+use App\Models\ActividadesInvestigacion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +15,7 @@ class TipoProductoController extends Controller
     public function index()
     {
         return Inertia::render('Parametros/TipoProducto/Index', [
-            'tiposProductos' => TipoProducto::all(),
+            'tiposProductos' => TipoProducto::with('actividadInvestigacion')->get(),
         ]);
     }
 
@@ -23,7 +24,9 @@ class TipoProductoController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Parametros/TipoProducto/Create');
+        return Inertia::render('Parametros/TipoProducto/Create', [
+            'actividadesInvestigacion' => ActividadesInvestigacion::all(['id', 'nombre']),
+        ]);
     }
 
     /**
@@ -31,11 +34,13 @@ class TipoProductoController extends Controller
      */
     public function store(Request $request)
     {
-        $request = $request->validate([
+        $request->validate([
             'nombre' => 'required|string|max:255',
+            'actividad_investigacion_id' => 'required|exists:actividades_investigacions,id',
         ]);
-        TipoProducto::create($request);
-        // return redirect()->route('parametros.tipo-producto.index')->with('success', 'Tipo de producto creado exitosamente.');
+        
+        TipoProducto::create($request->all());
+        
         return to_route('parametros.tipo-producto.index')->with('success', 'Tipo de producto creado exitosamente.');
     }
 
@@ -53,7 +58,8 @@ class TipoProductoController extends Controller
     public function edit(TipoProducto $tipoProducto)
     {
         return Inertia::render('Parametros/TipoProducto/Edit', [
-            'tipoProducto' => $tipoProducto,
+            'tipoProducto' => $tipoProducto->load('actividadInvestigacion'),
+            'actividadesInvestigacion' => ActividadesInvestigacion::all(['id', 'nombre']),
         ]);
     }
 
@@ -62,10 +68,13 @@ class TipoProductoController extends Controller
      */
     public function update(Request $request, TipoProducto $tipoProducto)
     {
-        $request = $request->validate([
+        $request->validate([
             'nombre' => 'required|string|max:255',
+            'actividad_investigacion_id' => 'required|exists:actividades_investigacions,id',
         ]);
-        $tipoProducto->update($request);
+        
+        $tipoProducto->update($request->all());
+        
         return to_route('parametros.tipo-producto.index')->with('success', 'Tipo de producto actualizado exitosamente.');
     }
 
@@ -74,8 +83,14 @@ class TipoProductoController extends Controller
      */
     public function destroy(TipoProducto $tipoProducto)
     {
+        // Verificar si tiene subtipos asociados
+        if ($tipoProducto->subTiposProductos()->count() > 0) {
+            return to_route('parametros.tipo-producto.index')
+                ->with('error', 'No se puede eliminar el tipo de producto porque tiene subtipos asociados.');
+        }
 
         $tipoProducto->delete();
+        
         return to_route('parametros.tipo-producto.index')->with('success', 'Tipo de producto eliminado exitosamente.');
     }
 }

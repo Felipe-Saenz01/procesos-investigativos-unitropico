@@ -49,15 +49,24 @@ class RoleSeeder extends Seeder
             if ($roleName === 'Administrador') {
                 $permisos = [
                     // Usuarios
-                    'crear-usuario', 'editar-usuario',
+                    'ver-usuario', 'crear-usuario', 'editar-usuario',
                     // Grupos de investigación
-                    'crear-grupo-investigacion', 'editar-grupo-investigacion',
+                    'ver-grupo-investigacion', 'crear-grupo-investigacion', 'editar-grupo-investigacion',
+                    'ver-actividad-investigacion', 'crear-actividad-investigacion', 'editar-actividad-investigacion',
+                    'ver-tipo-producto', 'crear-tipo-producto', 'editar-tipo-producto',
+                    'ver-subtipo-producto', 'crear-subtipo-producto', 'editar-subtipo-producto',
+                    // Proyecto
+                    'ver-proyecto', 'crear-proyecto', 'editar-proyecto',
+                    //Producto
+                    'ver-producto', 'crear-producto', 'editar-producto',
+
                     // Parámetros
-                    'crear-tipo-producto', 'editar-tipo-producto',
-                    'crear-subtipo-producto', 'editar-subtipo-producto',
-                    'crear-periodo', 'editar-periodo',
-                    'crear-rol', 'editar-rol',
-                    'crear-permiso', 'editar-permiso',
+                    'ver-parametros','crear-parametros', 'editar-parametros',
+                    // Roles
+                    'ver-roles', 'crear-roles', 'editar-roles',
+                    // Permisos
+                    'ver-permisos', 'crear-permisos', 'editar-permisos',
+
                 ];
                 $role->syncPermissions(Permission::whereIn('name', $permisos)->get());
             }
