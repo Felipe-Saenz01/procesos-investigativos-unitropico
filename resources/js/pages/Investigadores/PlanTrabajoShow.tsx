@@ -9,7 +9,7 @@ import { HistorialRevisionesModal } from '@/components/HistorialRevisionesModal'
 import { EstadoBadge } from '@/components/EstadoBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Plus, SquarePen, Trash, Eye, History, Send } from 'lucide-react';
+import { Plus, SquarePen, Trash, Eye, History, Send, Download } from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 import { Separator } from '@/components/ui/separator';
 
@@ -182,6 +182,16 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                     <History className="w-4 h-4 mr-2" />
                                     Historial Revisiones
                                 </Button>
+                                
+                                {/* Botón para descargar PDF */}
+                                <Button
+                                    onClick={() => window.open(route('pdf.plan-trabajo.preview', planTrabajo.id), '_blank')}
+                                    variant="outline"
+                                    className="border-green-500 text-green-600 hover:bg-green-50"
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Ver PDF
+                                </Button>
                             </div>
                         </div>
                     </CardHeader>
@@ -308,4 +318,4 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
             />
         </AppLayout>
     );
-} 
+}

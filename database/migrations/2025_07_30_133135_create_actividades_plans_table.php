@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('plan_trabajo_id')->constrained('plan_trabajos')->onDelete('cascade');
             $table->foreignId('actividad_investigacion_id')->constrained('actividades_investigacions');
             $table->string('alcance');
-            $table->string('entregable');
+            $table->text('entregable');
             $table->integer('horas_semana');
             $table->integer('total_horas');
             $table->timestamps();

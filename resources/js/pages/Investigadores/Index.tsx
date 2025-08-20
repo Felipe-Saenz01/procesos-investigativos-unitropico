@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText } from 'lucide-react';
+import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText, Download } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,11 +62,21 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <div className='flex flex-row items-center justify-between p-5'>
                         <h1 className='text-2xl font-bold m-5'>Investigadores</h1>
-                        {hasPermission('crear-usuario') && (
-                          <Link href={route('investigadores.create')} prefetch>
-                            <Button className="ml-4"><Plus /> Nuevo Investigador</Button>
-                          </Link>
-                        )}
+                        <div className="flex space-x-2">
+                            <Button
+                                onClick={() => window.open(route('pdf.investigadores.preview'), '_blank')}
+                                variant="outline"
+                                className="border-green-500 text-green-600 hover:bg-green-50"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Ver Reporte PDF
+                            </Button>
+                            {hasPermission('crear-usuario') && (
+                              <Link href={route('investigadores.create')} prefetch>
+                                <Button className="ml-4"><Plus /> Nuevo Investigador</Button>
+                              </Link>
+                            )}
+                        </div>
                     </div>
                     <div className='p-5'>
                         {flash?.success &&

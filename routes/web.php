@@ -8,6 +8,7 @@ use App\Http\Controllers\Parametros\PermisoController;
 use App\Http\Controllers\Parametros\RolController;
 use App\Http\Controllers\Parametros\EscalafonProfesoralController;
 use App\Http\Controllers\Parametros\ActividadesInvestigacionController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\PeriodoController;
 use App\Http\Controllers\ProductoInvestigativoController;
 use App\Http\Controllers\ProyectoInvestigativoController;
@@ -105,6 +106,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Ruta para realizar revisión del plan de trabajo
 Route::post('/investigadores/{investigador}/planes-trabajo/{planTrabajo}/revision', [InvestigadorController::class, 'revisionPlanTrabajo'])
     ->name('planes-trabajo.revision');
+
+// Rutas para PDFs
+Route::prefix('pdf')->name('pdf.')->group(function () {
+    Route::get('plan-trabajo/{planTrabajo}', [\App\Http\Controllers\PdfController::class, 'planTrabajo'])->name('plan-trabajo');
+    Route::get('plan-trabajo/{planTrabajo}/preview', [\App\Http\Controllers\PdfController::class, 'preview'])->name('plan-trabajo.preview');
+    Route::get('investigadores', [\App\Http\Controllers\PdfController::class, 'investigadores'])->name('investigadores');
+    Route::get('investigadores/preview', [\App\Http\Controllers\PdfController::class, 'previewInvestigadores'])->name('investigadores.preview');
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
