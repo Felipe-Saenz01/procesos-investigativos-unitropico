@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -70,7 +70,7 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
         estado: 'Inactivo'
     });
 
-    const { data: editData, setData: setEditData, put, processing: editProcessing, errors: editErrors, reset: resetEdit } = useForm({
+    const { data: editData, setData: setEditData, put, processing: editProcessing, reset: resetEdit } = useForm({
         horas: '',
         estado: ''
     });
@@ -79,7 +79,7 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post(route('investigadores.storeHoras', investigador.id), {
+        post(route('investigadores.horas.store', investigador.id), {
             onSuccess: () => {
                 reset();
             }
@@ -97,7 +97,7 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
     const handleUpdate = (e: FormEvent) => {
         e.preventDefault();
         if (editingId) {
-            put(route('investigadores.updateHoras', [investigador.id, editingId]), {
+            put(route('investigadores.horas.update', [investigador.id, editingId]), {
                 onSuccess: () => {
                     setEditingId(null);
                     resetEdit();
@@ -108,7 +108,7 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
 
     const handleDelete = (horasId: number) => {
         if (confirm('¿Estás seguro de que deseas eliminar estas horas de investigación?')) {
-            destroy(route('investigadores.destroyHoras', [investigador.id, horasId]));
+            destroy(route('investigadores.horas.destroy', [investigador.id, horasId]));
         }
     };
 

@@ -4,100 +4,167 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MultiSelect, type Option } from '@/components/ui/multiselect-combobox';
 import { SearchSelect } from '@/components/form-search-select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { CircleAlert, Plus } from 'lucide-react';
-import { FormEvent } from 'react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Productos Investigativos',
-        href: '/productos',
-    },
-    {
-        title: 'Crear Nuevo Producto',
-        href: '/productos/create',
-    }
-];
+import { CircleAlert } from 'lucide-react';
+import { FormEvent, useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface Proyecto {
     id: number;
     titulo: string;
 }
 
+interface ActividadInvestigacion {
+    id: number;
+    nombre: string;
+}
+
+interface TipoProducto {
+    id: number;
+    nombre: string;
+}
+
 interface SubTipoProducto {
     id: number;
     nombre: string;
-    descripcion: string;
 }
 
-interface Usuario {
-    id: number;
-    name: string;
-    tipo: string;
-}
-
-interface ProductosCreateProps {
+interface CreateProps {
     proyectos: Proyecto[];
-    subTipos: SubTipoProducto[];
-    usuarios: Usuario[];
-    usuarioLogueado: Usuario;
+    actividadesInvestigacion: ActividadInvestigacion[];
 }
 
-export default function ProductosCreate({ proyectos, subTipos, usuarios, usuarioLogueado }: ProductosCreateProps) {
-    const { data, setData, post, processing, errors, reset } = useForm({
+export default function Create({ proyectos, actividadesInvestigacion }: CreateProps) {
+    const { data, setData, post, errors, processing, reset } = useForm({
         titulo: '',
-        resumen: '',
-        proyecto_investigacion_id: '',
+        descripcion: '',
+        proyecto_investigativo_id: '',
+        actividad_investigacion_id: '',
+        tipo_producto_id: '',
         sub_tipo_producto_id: '',
-        usuarios: [usuarioLogueado.id.toString()] as string[],
     });
+
+    const [tiposProducto, setTiposProducto] = useState<TipoProducto[]>([]);
+    const [subTiposProducto, setSubTiposProducto] = useState<SubTipoProducto[]>([]);
+    const [loadingTipos, setLoadingTipos] = useState(false);
+    const [loadingSubTipos, setLoadingSubTipos] = useState(false);
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Productos',
+            href: route('productos.index'),
+        },
+        {
+            title: 'Crear Producto',
+            href: '#',
+        }
+    ];
+
+    const proyectoOptions = proyectos.map(proyecto => ({
+        value: proyecto.id,
+        label: proyecto.titulo
+    }));
+
+    const actividadOptions = actividadesInvestigacion.map(actividad => ({
+        value: actividad.id,
+        label: actividad.nombre
+    }));
+
+    const tipoOptions = tiposProducto.map(tipo => ({
+        value: tipo.id,
+        label: tipo.nombre
+    }));
+
+    const subTipoOptions = subTiposProducto.map(subTipo => ({
+        value: subTipo.id,
+        label: subTipo.nombre
+    }));
+
+    // Función para cargar tipos de producto cuando se selecciona una actividad
+    const cargarTiposProducto = async (actividadId: string) => {
+        if (!actividadId) {
+            setTiposProducto([]);
+            setSubTiposProducto([]);
+            setData('tipo_producto_id', '');
+            setData('sub_tipo_producto_id', '');
+            return;
+        }
+
+        setLoadingTipos(true);
+        try {
+            const response = await axios.get(route('productos.tipos-por-actividad'), {
+                params: { actividad_investigacion_id: actividadId }
+            });
+            setTiposProducto(response.data);
+            setSubTiposProducto([]);
+            setData('tipo_producto_id', '');
+            setData('sub_tipo_producto_id', '');
+        } catch (error) {
+            console.error('Error al cargar tipos de producto:', error);
+        } finally {
+            setLoadingTipos(false);
+        }
+    };
+
+    // Función para cargar subtipos de producto cuando se selecciona un tipo
+    const cargarSubTiposProducto = async (tipoId: string) => {
+        if (!tipoId) {
+            setSubTiposProducto([]);
+            setData('sub_tipo_producto_id', '');
+            return;
+        }
+
+        setLoadingSubTipos(true);
+        try {
+            const response = await axios.get(route('productos.subtipos-por-tipo'), {
+                params: { tipo_producto_id: tipoId }
+            });
+            setSubTiposProducto(response.data);
+            setData('sub_tipo_producto_id', '');
+        } catch (error) {
+            console.error('Error al cargar subtipos de producto:', error);
+        } finally {
+            setLoadingSubTipos(false);
+        }
+    };
+
+    // Efecto para cargar tipos cuando cambia la actividad
+    useEffect(() => {
+        if (data.actividad_investigacion_id) {
+            cargarTiposProducto(data.actividad_investigacion_id);
+        }
+    }, [data.actividad_investigacion_id]);
+
+    // Efecto para cargar subtipos cuando cambia el tipo
+    useEffect(() => {
+        if (data.tipo_producto_id) {
+            cargarSubTiposProducto(data.tipo_producto_id);
+        }
+    }, [data.tipo_producto_id]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        
         post(route('productos.store'), {
-            onSuccess: () => {
-                reset();
-            }
+            onSuccess: () => reset()
         });
     };
-
-    // Convertir proyectos a opciones para SearchSelect
-    const proyectoOptions: Option[] = proyectos.map(proyecto => ({
-        label: proyecto.titulo,
-        value: proyecto.id.toString()
-    }));
-
-    // Convertir subtipos a opciones para SearchSelect
-    const subTipoOptions: Option[] = subTipos.map(subTipo => ({
-        label: subTipo.nombre,
-        value: subTipo.id.toString()
-    }));
-
-    // Convertir usuarios a opciones para MultiSelect
-    const usuarioOptions: Option[] = usuarios.map(usuario => ({
-        label: `${usuario.name} (${usuario.tipo})`,
-        value: usuario.id.toString()
-    }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Crear Producto Investigativo" />
             <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
-                <form onSubmit={handleSubmit} className='sm:w-4/5'>
+                <form onSubmit={handleSubmit} className='sm:w-2/5'>
                     <Card className=''>
                         <CardHeader>
-                            <CardTitle className='text-2xl flex items-center gap-2'>
-                                <Plus className="h-6 w-6" />
-                                Crear Nuevo Producto Investigativo
+                            <CardTitle className='text-2xl flex justify-between items-center'>
+                                Crear Producto Investigativo
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {Object.keys(errors).length > 0 && 
+                            {Object.keys(errors).length > 0 &&
                                 <Alert variant='destructive' className='mb-3 w-full'>
                                     <CircleAlert />
                                     <AlertTitle>Por favor corrige los siguientes errores:</AlertTitle>
@@ -110,78 +177,82 @@ export default function ProductosCreate({ proyectos, subTipos, usuarios, usuario
                                     </AlertDescription>
                                 </Alert>
                             }
-                            
-                            <div className="space-y-6">
-                                {/* Campos básicos */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="titulo">Título del Producto *</Label>
-                                        <Input
-                                            id="titulo"
-                                            type="text"
-                                            value={data.titulo}
-                                            onChange={(e) => setData('titulo', e.target.value)}
-                                            placeholder="Ingrese el título del producto"
-                                            className="mt-1"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="proyecto">Proyecto Asociado *</Label>
-                                        <SearchSelect
-                                            options={proyectoOptions}
-                                            value={data.proyecto_investigacion_id}
-                                            onValueChange={(value) => setData('proyecto_investigacion_id', String(value))}
-                                            placeholder="Seleccionar proyecto..."
-                                            className="mt-1"
-                                        />
-                                    </div>
-                                </div>
-
+                            <div className="space-y-4">
                                 <div>
-                                    <Label htmlFor="sub_tipo_producto">Tipo de Producto *</Label>
+                                    <Label htmlFor="titulo">Título</Label>
+                                    <Input
+                                        id='titulo'
+                                        className="mt-1"
+                                        value={data.titulo}
+                                        onChange={(e) => setData('titulo', e.target.value)}
+                                        name='titulo'
+                                        placeholder="Ingrese el título del producto"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="descripcion">Descripción</Label>
+                                    <Textarea
+                                        id='descripcion'
+                                        className="mt-1"
+                                        value={data.descripcion}
+                                        onChange={(e) => setData('descripcion', e.target.value)}
+                                        name='descripcion'
+                                        placeholder="Ingrese la descripción del producto"
+                                        rows={4}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="proyecto_investigativo_id">Proyecto</Label>
+                                    <SearchSelect
+                                        options={proyectoOptions}
+                                        value={data.proyecto_investigativo_id}
+                                        onValueChange={(value) => setData('proyecto_investigativo_id', String(value))}
+                                        placeholder="Seleccionar proyecto..."
+                                        name="proyecto_investigativo_id"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="actividad_investigacion_id">Actividad de Investigación</Label>
+                                    <SearchSelect
+                                        options={actividadOptions}
+                                        value={data.actividad_investigacion_id}
+                                        onValueChange={(value) => setData('actividad_investigacion_id', String(value))}
+                                        placeholder="Seleccionar actividad de investigación..."
+                                        name="actividad_investigacion_id"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="tipo_producto_id">Tipo de Producto</Label>
+                                    <SearchSelect
+                                        options={tipoOptions}
+                                        value={data.tipo_producto_id}
+                                        onValueChange={(value) => setData('tipo_producto_id', String(value))}
+                                        placeholder={loadingTipos ? "Cargando tipos..." : "Seleccionar tipo de producto..."}
+                                        name="tipo_producto_id"
+                                        disabled={loadingTipos || !data.actividad_investigacion_id}
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="sub_tipo_producto_id">Subtipo de Producto</Label>
                                     <SearchSelect
                                         options={subTipoOptions}
                                         value={data.sub_tipo_producto_id}
                                         onValueChange={(value) => setData('sub_tipo_producto_id', String(value))}
-                                        placeholder="Seleccionar tipo de producto..."
-                                        className="mt-1"
-                                    />
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="usuarios">Usuarios Asociados *</Label>
-                                    <MultiSelect
-                                        options={usuarioOptions}
-                                        selected={data.usuarios}
-                                        onChange={(selected) => setData('usuarios', selected)}
-                                        placeholder="Seleccionar usuarios..."
-                                        className="mt-1"
-                                    />
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Selecciona los usuarios que participarán en este producto
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="resumen">Resumen *</Label>
-                                    <Textarea
-                                        id="resumen"
-                                        value={data.resumen}
-                                        onChange={(e) => setData('resumen', e.target.value)}
-                                        placeholder="Describa el resumen del producto investigativo"
-                                        className="mt-1"
-                                        rows={4}
+                                        placeholder={loadingSubTipos ? "Cargando subtipos..." : "Seleccionar subtipo de producto..."}
+                                        name="sub_tipo_producto_id"
+                                        disabled={loadingSubTipos || !data.tipo_producto_id}
                                     />
                                 </div>
                             </div>
                         </CardContent>
                         <CardFooter className='flex justify-end'>
-                            <Button type='button' variant="destructive" className='mr-3'>
-                                <Link href={route('productos.index')}>Cancelar</Link>
-                            </Button>
+                            <Link href={route('productos.index')}>
+                                <Button type='button' variant="outline" className='mr-3'>
+                                    Cancelar
+                                </Button>
+                            </Link>
                             <Button type='submit' disabled={processing} className='bg-primary hover:bg-primary/90'>
-                                {processing ? 'Creando...' : 'Crear Producto'}
+                                Crear Producto
                             </Button>
                         </CardFooter>
                     </Card>

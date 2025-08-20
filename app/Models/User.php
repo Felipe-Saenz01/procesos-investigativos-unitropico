@@ -95,4 +95,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(EscalafonProfesoral::class, 'escalafon_profesoral_id');
     }
+
+    // Relación con PlanTrabajo
+    public function planesTrabajo(): HasMany
+    {
+        return $this->hasMany(PlanTrabajo::class);
+    }
 }

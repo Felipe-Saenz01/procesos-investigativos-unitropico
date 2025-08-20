@@ -60,11 +60,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'updateHoras'])->name('investigadores.horas.update');
     Route::delete('investigadores/{investigador}/horas/{horasInvestigacion}', [InvestigadorController::class, 'destroyHoras'])->name('investigadores.horas.destroy');
 
+    // Rutas para planes de trabajo
+    Route::get('investigadores/{investigador}/planes-trabajo', [InvestigadorController::class, 'planesTrabajo'])->name('investigadores.planes-trabajo');
+    Route::get('investigadores/{investigador}/planes-trabajo/create', [InvestigadorController::class, 'createPlanTrabajo'])->name('investigadores.planes-trabajo.create');
+    Route::post('investigadores/{investigador}/planes-trabajo', [InvestigadorController::class, 'storePlanTrabajo'])->name('investigadores.planes-trabajo.store');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}', [InvestigadorController::class, 'showPlanTrabajo'])->name('investigadores.planes-trabajo.show');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/edit', [InvestigadorController::class, 'editPlanTrabajo'])->name('investigadores.planes-trabajo.edit');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}', [InvestigadorController::class, 'updatePlanTrabajo'])->name('investigadores.planes-trabajo.update');
+    Route::delete('investigadores/{investigador}/planes-trabajo/{planTrabajo}', [InvestigadorController::class, 'destroyPlanTrabajo'])->name('investigadores.planes-trabajo.destroy');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/aprobar', [InvestigadorController::class, 'aprobarPlanTrabajo'])->name('investigadores.planes-trabajo.aprobar');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/rechazar', [InvestigadorController::class, 'rechazarPlanTrabajo'])->name('investigadores.planes-trabajo.rechazar');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/enviar-revision', [InvestigadorController::class, 'enviarParaRevision'])->name('investigadores.planes-trabajo.enviar-revision');
+
+    // Rutas para actividades del plan de trabajo
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades', [InvestigadorController::class, 'actividadesPlan'])->name('investigadores.actividades-plan');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/create', [InvestigadorController::class, 'createActividadPlan'])->name('investigadores.actividades-plan.create');
+    Route::post('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades', [InvestigadorController::class, 'storeActividadPlan'])->name('investigadores.actividades-plan.store');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}/edit', [InvestigadorController::class, 'editActividadPlan'])->name('investigadores.actividades-plan.edit');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}', [InvestigadorController::class, 'updateActividadPlan'])->name('investigadores.actividades-plan.update');
+    Route::delete('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}', [InvestigadorController::class, 'destroyActividadPlan'])->name('investigadores.actividades-plan.destroy');
+
     // Rutas para Proyectos Investigativos
     Route::resource('proyectos', ProyectoInvestigativoController::class);
 
     // Rutas para Productos Investigativos
     Route::resource('productos', ProductoInvestigativoController::class);
+    Route::get('productos/tipos-por-actividad', [ProductoInvestigativoController::class, 'getTiposPorActividad'])->name('productos.tipos-por-actividad');
+    Route::get('productos/subtipos-por-tipo', [ProductoInvestigativoController::class, 'getSubTiposPorTipo'])->name('productos.subtipos-por-tipo');
 
     // Rutas para Elementos de Productos
     Route::resource('productos.elementos', ElementosProductoController::class);
@@ -79,6 +101,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('entregas/{entregaProducto}', [EntregaProductoController::class, 'update'])->name('entregas.update');
     Route::delete('entregas/{entregaProducto}', [EntregaProductoController::class, 'destroy'])->name('entregas.destroy');
 });
+
+// Ruta para realizar revisión del plan de trabajo
+Route::post('/investigadores/{investigador}/planes-trabajo/{planTrabajo}/revision', [InvestigadorController::class, 'revisionPlanTrabajo'])
+    ->name('planes-trabajo.revision');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

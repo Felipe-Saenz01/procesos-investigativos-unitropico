@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 use App\Models\TipoContrato;
 use App\Models\EscalafonProfesoral;
+use App\Models\PlanTrabajo;
+use App\Models\ActividadesPlan;
+use App\Models\ActividadesInvestigacion;
 
 class InvestigadorController extends Controller
 {
@@ -19,6 +22,7 @@ class InvestigadorController extends Controller
         $user = Auth::user();
         $isAdmin = $user->hasRole('Administrador');
         $isLider = $user->hasRole('Lider Grupo');
+        $isInvestigador = $user->hasRole('Investigador');
 
         // Si es administrador, se muestran todos los investigadores
         if ($isAdmin) {
@@ -26,7 +30,7 @@ class InvestigadorController extends Controller
                 ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
                 ->get();
         // Si es lider de grupo, se muestran los investigadores de su grupo
-        } elseif ($isLider) {
+        } elseif ($isLider || $isInvestigador) {
             $investigadores = User::with('grupo_investigacion')
                 ->where('grupo_investigacion_id', $user->grupo_investigacion_id)
                 ->get();
@@ -208,5 +212,248 @@ class InvestigadorController extends Controller
         $horas = $investigador->horasInvestigacion()->findOrFail($horasInvestigacionId);
         $horas->delete();
         return to_route('investigadores.horas', $investigador->id)->with('success', 'Registro de horas eliminado exitosamente.');
+    }
+
+    // --- Métodos de Planes de Trabajo ---
+    public function planesTrabajo(User $investigador)
+    {
+        $planes = $investigador->planesTrabajo()->with('actividades.actividadInvestigacion')->get();
+        return inertia('Investigadores/PlanesTrabajo', [
+            'investigador' => $investigador,
+            'planesTrabajo' => $planes,
+        ]);
+    }
+
+    public function createPlanTrabajo(User $investigador)
+    {
+        return inertia('Investigadores/PlanTrabajoCreate', [
+            'investigador' => $investigador,
+        ]);
+    }
+
+    public function storePlanTrabajo(Request $request, User $investigador)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'vigencia' => 'required|in:Anual,Semestral',
+        ]);
+
+        $investigador->planesTrabajo()->create([
+            'nombre' => $request->nombre,
+            'vigencia' => $request->vigencia,
+            'estado' => 'Creado', // Estado inicial editable
+        ]);
+
+        return to_route('investigadores.planes-trabajo', $investigador->id)->with('success', 'Plan de trabajo creado exitosamente.');
+    }
+
+    public function editPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        return inertia('Investigadores/PlanTrabajoEdit', [
+            'investigador' => $investigador,
+            'planTrabajo' => $planTrabajo,
+        ]);
+    }
+
+    public function updatePlanTrabajo(Request $request, User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'vigencia' => 'required|in:Anual,Semestral',
+        ]);
+
+        $planTrabajo->update([
+            'nombre' => $request->nombre,
+            'vigencia' => $request->vigencia,
+            // No cambiar el estado, mantener el actual
+        ]);
+
+        return to_route('investigadores.planes-trabajo', $investigador->id)->with('success', 'Plan de trabajo actualizado exitosamente.');
+    }
+
+    public function destroyPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $planTrabajo->delete();
+        
+        return to_route('investigadores.planes-trabajo', $investigador->id)->with('success', 'Plan de trabajo eliminado exitosamente.');
+    }
+
+    public function showPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()
+            ->with(['actividades.actividadInvestigacion', 'revisiones.revisor'])
+            ->findOrFail($planTrabajoId);
+        
+        // return $planTrabajo;
+        
+        return inertia('Investigadores/PlanTrabajoShow', [
+            'investigador' => $investigador,
+            'planTrabajo' => $planTrabajo,
+        ]);
+    }
+
+    // --- Métodos de Actividades del Plan ---
+    public function actividadesPlan(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $actividades = $planTrabajo->actividades()->with('actividadInvestigacion')->get();
+        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        return inertia('Investigadores/ActividadesPlan', [
+            'investigador' => $investigador,
+            'planTrabajo' => $planTrabajo,
+            'actividades' => $actividades,
+            'actividadesInvestigacion' => $actividadesInvestigacion,
+        ]);
+    }
+
+    public function createActividadPlan(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        return inertia('Investigadores/ActividadPlanCreate', [
+            'investigador' => $investigador,
+            'planTrabajo' => $planTrabajo,
+            'actividadesInvestigacion' => $actividadesInvestigacion,
+        ]);
+    }
+
+    public function storeActividadPlan(Request $request, User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        
+        $request->validate([
+            'actividad_investigacion_id' => 'required|exists:actividades_investigacions,id',
+            'alcance' => 'required|string|max:1000',
+            'entregable' => 'required|string|max:1000',
+            'horas_semana' => 'required|integer|min:1',
+            'total_horas' => 'required|integer|min:1',
+        ]);
+
+        $planTrabajo->actividades()->create([
+            'actividad_investigacion_id' => $request->actividad_investigacion_id,
+            'alcance' => $request->alcance,
+            'entregable' => $request->entregable,
+            'horas_semana' => $request->horas_semana,
+            'total_horas' => $request->total_horas,
+        ]);
+
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Actividad del plan creada exitosamente.');
+    }
+
+    public function editActividadPlan(User $investigador, $planTrabajoId, $actividadPlanId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
+        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        return inertia('Investigadores/ActividadPlanEdit', [
+            'investigador' => $investigador,
+            'planTrabajo' => $planTrabajo,
+            'actividad' => $actividad,
+            'actividadesInvestigacion' => $actividadesInvestigacion,
+        ]);
+    }
+
+    public function updateActividadPlan(Request $request, User $investigador, $planTrabajoId, $actividadPlanId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
+        
+        $request->validate([
+            'actividad_investigacion_id' => 'required|exists:actividades_investigacions,id',
+            'alcance' => 'required|string|max:1000',
+            'entregable' => 'required|string|max:1000',
+            'horas_semana' => 'required|integer|min:1',
+            'total_horas' => 'required|integer|min:1',
+        ]);
+
+        $actividad->update([
+            'actividad_investigacion_id' => $request->actividad_investigacion_id,
+            'alcance' => $request->alcance,
+            'entregable' => $request->entregable,
+            'horas_semana' => $request->horas_semana,
+            'total_horas' => $request->total_horas,
+        ]);
+
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Actividad del plan actualizada exitosamente.');
+    }
+
+    public function destroyActividadPlan(User $investigador, $planTrabajoId, $actividadPlanId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
+        $actividad->delete();
+        
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Actividad del plan eliminada exitosamente.');
+    }
+
+    // --- Método para aprobar planes de trabajo ---
+    public function aprobarPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        
+        // Verificar que el plan tenga al menos una actividad
+        if ($planTrabajo->actividades()->count() === 0) {
+            return back()->withErrors(['plan' => 'No se puede aprobar un plan sin actividades.']);
+        }
+
+        $planTrabajo->update([
+            'estado' => 'Aprobado'
+        ]);
+
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Plan de trabajo aprobado exitosamente.');
+    }
+
+    // --- Método para rechazar planes de trabajo ---
+    public function rechazarPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+
+        $planTrabajo->update([
+            'estado' => 'Rechazado'
+        ]);
+
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Plan de trabajo rechazado exitosamente.');
+    }
+
+    // --- Método para enviar plan para revisión (desde rechazado a pendiente) ---
+    public function enviarParaRevision(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = PlanTrabajo::where('user_id', $investigador->id)
+            ->findOrFail($planTrabajoId);
+
+        $planTrabajo->estado = 'Pendiente';
+        $planTrabajo->save();
+
+        return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Plan de trabajo enviado para revisión exitosamente.');
+    }
+
+    public function revisionPlanTrabajo(Request $request, User $investigador, PlanTrabajo $planTrabajo)
+    {
+        $request->validate([
+            'estado' => 'required|in:Creado,Aprobado,Corrección,Rechazado',
+            'comentario' => 'required|string|min:10'
+        ]);
+
+        // $planTrabajo = PlanTrabajo::where('user_id', $investigador->id)
+        //     ->findOrFail($planTrabajoId);
+
+        // Cambiar el estado del plan
+        $planTrabajo->estado = $request->estado;
+        $planTrabajo->save();
+
+        // Crear la revisión para el historial
+        $planTrabajo->crearRevision([
+            'user_id' => Auth::id(),
+            'estado' => $request->estado,
+            'comentario' => $request->comentario
+        ]);
+
+        return redirect()->back()->with('success', 'Revisión realizada exitosamente');
     }
 } 

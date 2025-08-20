@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Clock, Plus, SquarePen } from 'lucide-react';
+import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -87,34 +87,34 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                         }
                         {investigadores.length === 0 && <p className='mx-5 text-gray-400'>No hay investigadores registrados.</p>}
                         {investigadores.length > 0 &&
-                            <Table className=''>
+                            <Table className='w-full table-auto'>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className='w-1/4'>Nombre</TableHead>
-                                        <TableHead className='w-1/4'>Correo</TableHead>
-                                        <TableHead className='w-1/6'>Tipo</TableHead>
-                                        <TableHead className='w-1/4'>Grupo de Investigación</TableHead>
+                                        <TableHead className='font-bold'>Nombre</TableHead>
+                                        <TableHead className='font-bold'>Correo</TableHead>
+                                        <TableHead className='font-bold'>Tipo</TableHead>
+                                        <TableHead className='font-bold'>Grupo de Investigación</TableHead>
                                         {mostrarAcciones && (
-                                            <TableHead className='w-1/5'>Acciones</TableHead>
+                                            <TableHead className='font-bold'>Acciones</TableHead>
                                         )}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {investigadores.map((investigador) => (
                                         <TableRow key={investigador.id}>
-                                            <TableCell className='w-1/4 font-medium'>{investigador.name}</TableCell>
-                                            <TableCell className='w-1/4'>{investigador.email}</TableCell>
-                                            <TableCell className='w-1/6'>
+                                            <TableCell className='font-medium'>{investigador.name}</TableCell>
+                                            <TableCell>{investigador.email}</TableCell>
+                                            <TableCell>
                                                 {getRoleBadge(investigador.tipo)}
                                             </TableCell>
-                                            <TableCell className='w-1/4'>
+                                            <TableCell >
                                                 {investigador.grupo_investigacion ? 
                                                     investigador.grupo_investigacion.nombre : 
                                                     <span className="text-gray-400">Sin grupo asignado</span>
                                                 }
                                             </TableCell>
                                             {mostrarAcciones && (
-                                                <TableCell className='w-1/5 flex gap-2 justify-end'>
+                                                <TableCell className='flex gap-2 justify-end'>
                                                     {hasPermission('editar-usuario') && (
                                                         <Link href={route('investigadores.edit', investigador.id)} prefetch>
                                                             <Button variant="outline" size="sm" title="Editar investigador">
@@ -126,6 +126,13 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                                         <Link href={route('investigadores.horas', investigador.id)} prefetch>
                                                             <Button variant="outline" size="sm" title="Ver horas de investigación">
                                                                 <Clock className="h-4 w-4" />
+                                                            </Button>
+                                                        </Link>
+                                                    )}
+                                                    {hasPermission('ver-planes-trabajo') && (
+                                                        <Link href={route('investigadores.planes-trabajo', investigador.id)} prefetch>
+                                                            <Button variant="outline" size="sm" title="Ver planes de trabajo">
+                                                                <FileText className="h-4 w-4" />
                                                             </Button>
                                                         </Link>
                                                     )}

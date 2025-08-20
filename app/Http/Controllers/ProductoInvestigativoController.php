@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\ActividadesInvestigacion;
+use App\Models\TipoProducto;
 
 class ProductoInvestigativoController extends Controller
 {
@@ -35,32 +37,16 @@ class ProductoInvestigativoController extends Controller
      */
     public function create()
     {
-        // Obtener proyectos donde el usuario logueado está asociado
-        $proyectos = ProyectoInvestigativo::where('estado', 'Formulado')
-            ->whereHas('usuarios', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->get(['id', 'titulo']);
-
-        if ($proyectos->isEmpty()) {
-            return to_route('proyectos.index')->with('error', 'No tienes proyectos formulados.');
-        }
-
-        // Obtener subtipos de productos
-        $subTipos = SubTipoProducto::all();
-
-        // Obtener usuarios para el multiselect (solo usuarios que tengan proyectos)
-        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
-
-        return Inertia::render('Productos/Create', [
+        $user = Auth::user();
+        $proyectos = ProyectoInvestigativo::whereHas('usuarios', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->where('estado', '!=', 'Formulación')->get(['id', 'titulo']);
+        
+        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        return inertia('Productos/Create', [
             'proyectos' => $proyectos,
-            'subTipos' => $subTipos,
-            'usuarios' => $usuarios,
-            'usuarioLogueado' => [
-                'id' => Auth::id(),
-                'name' => Auth::user()->name,
-                'tipo' => Auth::user()->tipo,
-            ],
+            'actividadesInvestigacion' => $actividadesInvestigacion,
         ]);
     }
 
@@ -71,45 +57,17 @@ class ProductoInvestigativoController extends Controller
     {
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'resumen' => 'required|string',
-            'proyecto_investigacion_id' => 'required|exists:proyecto_investigativos,id',
+            'descripcion' => 'required|string',
+            'proyecto_investigativo_id' => 'required|exists:proyecto_investigativos,id',
             'sub_tipo_producto_id' => 'required|exists:sub_tipo_productos,id',
-            'usuarios' => 'required|array|min:1',
-            'usuarios.*' => 'exists:users,id',
-        ], [
-            'titulo.required' => 'El título es requerido.',
-            'resumen.required' => 'El resumen es requerido.',
-            'proyecto_investigacion_id.required' => 'Debe seleccionar un proyecto.',
-            'proyecto_investigacion_id.exists' => 'El proyecto seleccionado no existe.',
-            'sub_tipo_producto_id.required' => 'Debe seleccionar un tipo de producto.',
-            'sub_tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
-            'usuarios.required' => 'Debe seleccionar al menos un usuario.',
-            'usuarios.min' => 'Debe seleccionar al menos un usuario.',
-            'usuarios.*.exists' => 'Uno de los usuarios seleccionados no existe.',
         ]);
 
-        // Verificar que el proyecto está asociado al usuario logueado
-        $proyecto = ProyectoInvestigativo::where('id', $request->proyecto_investigacion_id)
-            ->whereHas('usuarios', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->first();
-
-        if (!$proyecto) {
-            return back()->withErrors(['proyecto_investigacion_id' => 'No tienes permisos para usar este proyecto.']);
-        }
-
-        // Crear el producto
         $producto = ProductoInvestigativo::create([
             'titulo' => $request->titulo,
-            'resumen' => $request->resumen,
-            'proyecto_investigacion_id' => $request->proyecto_investigacion_id,
+            'descripcion' => $request->descripcion,
+            'proyecto_investigativo_id' => $request->proyecto_investigativo_id,
             'sub_tipo_producto_id' => $request->sub_tipo_producto_id,
-            'progreso' => 0,
         ]);
-
-        // Asociar usuarios
-        $producto->usuarios()->attach($request->usuarios);
 
         return to_route('productos.index')->with('success', 'Producto investigativo creado exitosamente.');
     }
@@ -167,34 +125,32 @@ class ProductoInvestigativoController extends Controller
      */
     public function edit(ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al producto (está en la lista de usuarios asociados)
-        if (!$producto->usuarios->contains(Auth::id())) {
-            abort(403, 'No tienes permisos para editar este producto.');
+        $user = Auth::user();
+        
+        // Verificar que el usuario tenga acceso al proyecto del producto
+        $proyecto = $producto->proyectoInvestigativo;
+        if (!$proyecto->usuarios()->where('user_id', $user->id)->exists()) {
+            abort(403, 'No tienes acceso a este producto.');
         }
 
-        // Verificar que el proyecto no esté en estado de formulación
-        if ($producto->proyecto->estado === 'Formulación') {
-            abort(403, 'No se puede editar un producto cuyo proyecto está en estado de formulación.');
+        // Verificar que el proyecto no esté en formulación
+        if ($proyecto->estado === 'Formulación') {
+            abort(403, 'No se puede editar productos de proyectos en formulación.');
         }
 
-        // Obtener proyectos donde el usuario logueado está asociado (solo proyectos formulados)
-        $proyectos = ProyectoInvestigativo::where('estado', 'Formulado')
-            ->whereHas('usuarios', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->get(['id', 'titulo']);
-
-        // Obtener subtipos de productos
-        $subTipos = SubTipoProducto::all();
-
-        // Obtener usuarios para el multiselect
-        $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
-
-        return Inertia::render('Productos/Edit', [
-            'producto' => $producto->load(['usuarios', 'proyecto', 'subTipoProducto']),
+        $proyectos = ProyectoInvestigativo::whereHas('usuarios', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->where('estado', '!=', 'Formulación')->get(['id', 'titulo']);
+        
+        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        // Cargar las relaciones necesarias para el filtrado
+        $producto->load('subTipoProducto.tipoProducto.actividadInvestigacion');
+        
+        return inertia('Productos/Edit', [
+            'producto' => $producto,
             'proyectos' => $proyectos,
-            'subTipos' => $subTipos,
-            'usuarios' => $usuarios,
+            'actividadesInvestigacion' => $actividadesInvestigacion,
         ]);
     }
 
@@ -203,58 +159,47 @@ class ProductoInvestigativoController extends Controller
      */
     public function update(Request $request, ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al producto (está en la lista de usuarios asociados)
-        if (!$producto->usuarios->contains(Auth::id())) {
-            abort(403, 'No tienes permisos para actualizar este producto.');
-        }
-
-        // Verificar que el proyecto no esté en estado de formulación
-        if ($producto->proyecto->estado === 'Formulación') {
-            abort(403, 'No se puede actualizar un producto cuyo proyecto está en estado de formulación.');
-        }
-
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'resumen' => 'required|string',
-            'proyecto_investigacion_id' => 'required|exists:proyecto_investigativos,id',
+            'descripcion' => 'required|string',
+            'proyecto_investigativo_id' => 'required|exists:proyecto_investigativos,id',
             'sub_tipo_producto_id' => 'required|exists:sub_tipo_productos,id',
-            'usuarios' => 'required|array|min:1',
-            'usuarios.*' => 'exists:users,id',
-        ], [
-            'titulo.required' => 'El título es requerido.',
-            'resumen.required' => 'El resumen es requerido.',
-            'proyecto_investigacion_id.required' => 'Debe seleccionar un proyecto.',
-            'proyecto_investigacion_id.exists' => 'El proyecto seleccionado no existe.',
-            'sub_tipo_producto_id.required' => 'Debe seleccionar un tipo de producto.',
-            'sub_tipo_producto_id.exists' => 'El tipo de producto seleccionado no existe.',
-            'usuarios.required' => 'Debe seleccionar al menos un usuario.',
-            'usuarios.min' => 'Debe seleccionar al menos un usuario.',
-            'usuarios.*.exists' => 'Uno de los usuarios seleccionados no existe.',
         ]);
 
-        // Verificar que el proyecto está asociado al usuario logueado
-        $proyecto = ProyectoInvestigativo::where('id', $request->proyecto_investigacion_id)
-            ->whereHas('usuarios', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->first();
-
-        if (!$proyecto) {
-            return back()->withErrors(['proyecto_investigacion_id' => 'No tienes permisos para usar este proyecto.']);
-        }
-
-        // Actualizar el producto
         $producto->update([
             'titulo' => $request->titulo,
-            'resumen' => $request->resumen,
-            'proyecto_investigacion_id' => $request->proyecto_investigacion_id,
+            'descripcion' => $request->descripcion,
+            'proyecto_investigativo_id' => $request->proyecto_investigativo_id,
             'sub_tipo_producto_id' => $request->sub_tipo_producto_id,
         ]);
 
-        // Sincronizar usuarios
-        $producto->usuarios()->sync($request->usuarios);
-
         return to_route('productos.index')->with('success', 'Producto investigativo actualizado exitosamente.');
+    }
+
+    // Método para obtener tipos de producto filtrados por actividad de investigación
+    public function getTiposPorActividad(Request $request)
+    {
+        $request->validate([
+            'actividad_investigacion_id' => 'required|exists:actividades_investigacions,id'
+        ]);
+
+        $tipos = TipoProducto::where('actividad_investigacion_id', $request->actividad_investigacion_id)
+            ->get(['id', 'nombre']);
+
+        return response()->json($tipos);
+    }
+
+    // Método para obtener subtipos de producto filtrados por tipo de producto
+    public function getSubTiposPorTipo(Request $request)
+    {
+        $request->validate([
+            'tipo_producto_id' => 'required|exists:tipo_productos,id'
+        ]);
+
+        $subTipos = SubTipoProducto::where('tipo_producto_id', $request->tipo_producto_id)
+            ->get(['id', 'nombre']);
+
+        return response()->json($subTipos);
     }
 
     /**

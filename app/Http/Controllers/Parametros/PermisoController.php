@@ -18,6 +18,7 @@ class PermisoController extends Controller
         'roles',
         'permisos',
         'horas-investigacion',
+        'planes-trabajo',
         'parametros',
 
 
