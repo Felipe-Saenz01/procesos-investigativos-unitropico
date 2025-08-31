@@ -20,8 +20,8 @@ class PermisoController extends Controller
         'horas-investigacion',
         'planes-trabajo',
         'parametros',
-
-
+        'convocatorias',
+        'postulaciones',
     ];
     // const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'asignar', 'aprobar', 'exportar'];
     const ACCIONES = ['ver', 'crear', 'editar', 'eliminar', 'revisar', 'aprobar'];

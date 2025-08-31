@@ -12,7 +12,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ auth }: LoginPageProps) {
-  // Si el usuario ya está autenticado, redirigir al dashboard
+  // Redireccion al dashboard cuando se esta logueado
   useEffect(() => {
     if (auth.user) {
       router.visit(route('dashboard'));
@@ -45,9 +45,9 @@ export default function LoginPage({ auth }: LoginPageProps) {
       </div>
       <div className="bg-muted relative hidden lg:block">
         <img
-          src="/login_image.jpg"
+          src="/Test-login.png"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="w-full object-cover"
         />
       </div>
     </div>

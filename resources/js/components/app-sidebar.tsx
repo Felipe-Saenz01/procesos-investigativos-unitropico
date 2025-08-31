@@ -6,7 +6,7 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone } from 'lucide-react';
 import AppLogo from './app-logo';
 
 // Extender NavItem para incluir permisos requeridos
@@ -43,6 +43,12 @@ const mainNavItems: NavItemWithPermissions[] = [
         href: route('productos.index'),
         icon: FileText,
         requiredPermission: 'ver-producto',
+    },
+    {
+        title: 'Convocatorias',
+        href: route('convocatorias.index'),
+        icon: Megaphone,
+        requiredPermission: 'ver-convocatorias',
     }
 ];
 
@@ -95,6 +101,7 @@ const NavParamsItems: NavItemWithPermissions[] = [
         icon: LibraryBig,
         requiredPermission: 'ver-parametros',
     },
+
 ];
 
 // const footerNavItems: NavItem[] = [

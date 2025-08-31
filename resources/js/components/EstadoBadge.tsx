@@ -95,7 +95,22 @@ export function EstadoBadge({ estado, size = 'default', showIcon = true }: Estad
             icon: Pause, 
             text: 'Inactivo',
             color: 'text-gray-600'
-        }
+        },
+
+        // Estados de convocatorias
+        'Abierta': { 
+            variant: 'default' as const, 
+            icon: CheckCircle, 
+            text: 'Abierta',
+            color: 'bg-green-600'
+        },
+        'Cerrada': { 
+            variant: 'default' as const, 
+            icon: CheckCircle, 
+            text: 'Cerrada',
+            color: 'bg-red-600'
+        },
+        
     };
 
     const estadoInfo = estados[estado as keyof typeof estados] || estados['Pendiente'];

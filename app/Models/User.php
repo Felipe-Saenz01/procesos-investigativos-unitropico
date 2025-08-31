@@ -101,4 +101,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(PlanTrabajo::class);
     }
+
+    // Relación con Postulaciones
+    public function postulaciones(): HasMany
+    {
+        return $this->hasMany(Postulacion::class);
+    }
+
+    // Relación con Postulaciones como revisor
+    public function postulacionesRevisadas(): HasMany
+    {
+        return $this->hasMany(Postulacion::class, 'revisor_id');
+    }
 }

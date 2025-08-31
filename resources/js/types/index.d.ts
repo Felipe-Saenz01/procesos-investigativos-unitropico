@@ -48,3 +48,53 @@ export interface User {
     permissions?: string[];
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface Convocatoria {
+    id: number;
+    nombre: string;
+    descripcion?: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    estado: string;
+    created_at: string;
+    updated_at: string;
+    esta_abierta?: boolean;
+    dias_restantes?: number;
+    mi_postulacion?: Postulacion;
+    puede_postularse?: boolean;
+}
+
+export interface RequisitosConvocatoria {
+    id: number;
+    convocatoria_id: number;
+    nombre: string;
+    descripcion?: string;
+    tipo_archivo: string;
+    obligatorio: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Postulacion {
+    id: number;
+    convocatoria_id: number;
+    user_id: number;
+    estado: string;
+    comentarios?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ArchivoPostulacion {
+    id: number;
+    postulacion_id: number;
+    requisito_convocatoria_id: number;
+    nombre_original: string;
+    nombre_archivo: string;
+    ruta_archivo: string;
+    tipo_mime: string;
+    tamaño_bytes: number;
+    observaciones?: string;
+    created_at: string;
+    updated_at: string;
+}

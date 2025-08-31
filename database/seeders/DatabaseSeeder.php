@@ -228,6 +228,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
+        $this->call(ConvocatoriaPermissionSeeder::class);
+        $this->call(ConvocatoriaSeeder::class);
 
         // Crear actividades de investigación, tipos de productos y sus subtipos
         foreach ($actividadesInvestigacion as $actividad) {

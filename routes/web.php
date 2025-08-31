@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConvocatoriaController;
 use App\Http\Controllers\ElementosProductoController;
 use App\Http\Controllers\EntregaProductoController;
 use App\Http\Controllers\GrupoInvestigacionController;
@@ -8,8 +9,10 @@ use App\Http\Controllers\Parametros\PermisoController;
 use App\Http\Controllers\Parametros\RolController;
 use App\Http\Controllers\Parametros\EscalafonProfesoralController;
 use App\Http\Controllers\Parametros\ActividadesInvestigacionController;
+use App\Http\Controllers\Parametros\TipoContratoController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\PeriodoController;
+use App\Http\Controllers\PostulacionController;
 use App\Http\Controllers\ProductoInvestigativoController;
 use App\Http\Controllers\ProyectoInvestigativoController;
 use App\Http\Controllers\SubTipoProductoController;
@@ -37,11 +40,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('rol', RolController::class);
         Route::resource('permiso', PermisoController::class);
         Route::resource('escalafon-profesoral', EscalafonProfesoralController::class);
-        Route::resource('tipo-contrato', \App\Http\Controllers\Parametros\TipoContratoController::class);
+        Route::resource('tipo-contrato', TipoContratoController::class);
         Route::resource('actividades-investigacion', ActividadesInvestigacionController::class);
-        Route::get('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'permisos'])->name('rol.permisos');
-        Route::put('rol/{rol}/permisos', [\App\Http\Controllers\Parametros\RolController::class, 'actualizarPermisos'])->name('rol.permisos.update');
+        Route::get('rol/{rol}/permisos', [RolController::class, 'permisos'])->name('rol.permisos');
+        Route::put('rol/{rol}/permisos', [RolController::class, 'actualizarPermisos'])->name('rol.permisos.update');
     });
+
+    // Rutas para Convocatorias
+    Route::resource('convocatorias', ConvocatoriaController::class);
+    Route::get('convocatorias/{convocatoria}/postulaciones', [ConvocatoriaController::class, 'postulaciones'])->name('convocatorias.postulaciones');
+    Route::put('convocatorias/{convocatoria}/estado', [ConvocatoriaController::class, 'cambiarEstado'])->name('convocatorias.estado');
+    
+    // Rutas para Postulaciones
+    Route::get('convocatorias/{convocatoria}/postular', [PostulacionController::class, 'create'])->name('convocatorias.postular');
+    Route::post('convocatorias/{convocatoria}/postular', [PostulacionController::class, 'store'])->name('convocatorias.postular.store');
+    Route::get('postulaciones/{postulacion}', [PostulacionController::class, 'show'])->name('postulaciones.show');
+    Route::put('postulaciones/{postulacion}/edit', [PostulacionController::class, 'edit'])->name('postulaciones.edit');
+    Route::delete('postulaciones/{postulacion}', [PostulacionController::class, 'destroy'])->name('postulaciones.destroy');
+    Route::get('postulaciones/{postulacion}/archivos/{archivo}/descargar', [PostulacionController::class, 'descargarArchivo'])->name('postulaciones.archivos.descargar');
+    Route::put('postulaciones/{postulacion}/archivos/{archivo}/observaciones', [PostulacionController::class, 'actualizarObservaciones'])->name('postulaciones.archivos.observaciones');
 
     Route::resource('grupo-investigacion', GrupoInvestigacionController::class);
     
@@ -109,10 +126,10 @@ Route::post('/investigadores/{investigador}/planes-trabajo/{planTrabajo}/revisio
 
 // Rutas para PDFs
 Route::prefix('pdf')->name('pdf.')->group(function () {
-    Route::get('plan-trabajo/{planTrabajo}', [\App\Http\Controllers\PdfController::class, 'planTrabajo'])->name('plan-trabajo');
-    Route::get('plan-trabajo/{planTrabajo}/preview', [\App\Http\Controllers\PdfController::class, 'preview'])->name('plan-trabajo.preview');
-    Route::get('investigadores', [\App\Http\Controllers\PdfController::class, 'investigadores'])->name('investigadores');
-    Route::get('investigadores/preview', [\App\Http\Controllers\PdfController::class, 'previewInvestigadores'])->name('investigadores.preview');
+    Route::get('plan-trabajo/{planTrabajo}', [PdfController::class, 'planTrabajo'])->name('plan-trabajo');
+    Route::get('plan-trabajo/{planTrabajo}/preview', [PdfController::class, 'preview'])->name('plan-trabajo.preview');
+    Route::get('investigadores', [PdfController::class, 'investigadores'])->name('investigadores');
+    Route::get('investigadores/preview', [PdfController::class, 'previewInvestigadores'])->name('investigadores.preview');
 });
 
 require __DIR__.'/settings.php';
