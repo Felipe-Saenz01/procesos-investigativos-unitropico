@@ -30,10 +30,12 @@ class InvestigadorController extends Controller
                 ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
                 ->get();
         // Si es lider de grupo, se muestran los investigadores de su grupo
-        } elseif ($isLider || $isInvestigador) {
+        } elseif ($isLider ) {
             $investigadores = User::with('grupo_investigacion')
                 ->where('grupo_investigacion_id', $user->grupo_investigacion_id)
                 ->get();
+        } elseif ($isInvestigador) {
+            return redirect()->route('investigadores.show', $user->id);
         // Si no es administrador ni lider de grupo, se redirige a la página de inicio
         } else {
             return redirect()->route('dashboard');
@@ -46,8 +48,20 @@ class InvestigadorController extends Controller
 
     public function show(User $investigador)
     {
+        $investigador->load([
+            'grupo_investigacion',
+            'escalafon_profesoral',
+            'tipoContrato',
+            'proyectosInvestigativos',
+            'productosInvestigativos.tipo_producto',
+            'productosInvestigativos.sub_tipo_producto',
+            'horasInvestigacion.periodo',
+            'planesTrabajo'
+        ]);
+        $investigador->isInvestigador = $investigador->hasRole('Investigador');
+
         return inertia('Investigadores/Show', [
-            'investigador' => $investigador->load('grupo_investigacion'),
+            'investigador' => $investigador,
         ]);
     }
 
@@ -139,8 +153,17 @@ class InvestigadorController extends Controller
     // --- Métodos de Horas de Investigación ---
     public function horas(User $investigador)
     {
+        if (!$investigador->escalafon_profesoral) {
+            return to_route('investigadores.show', $investigador->id)->with('error', 'Este investigador no tiene un escalafón profesoral asignado');
+        }
+        $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
+        
+        if ($periodos->isEmpty()) {
+            return to_route('investigadores.show', $investigador->id)->with('error', 'No hay períodos activos para asignar horas de investigación');
+        }
+
         $horas = $investigador->horasInvestigacion()->with('periodo')->get();
-        $periodos = \App\Models\Periodo::all(['id', 'nombre']);
+        $investigador->load('escalafon_profesoral');
         return inertia('Investigadores/Horas', [
             'investigador' => $investigador,
             'horasInvestigacion' => $horas,
@@ -199,6 +222,14 @@ class InvestigadorController extends Controller
             'horas' => 'required|integer|min:0',
             'estado' => 'required|in:Activo,Inactivo',
         ]);
+
+        // Validar que las horas no excedan las permitidas por el escalafón profesoral
+        if ($investigador->escalafonProfesoral && $investigador->escalafonProfesoral->horas_semanales) {
+            if ($request->horas > $investigador->escalafonProfesoral->horas_semanales) {
+                return back()->withErrors(['horas' => "Las horas exceden el límite permitido. Máximo permitido: {$investigador->escalafonProfesoral->horas_semanales} horas (escalafón: {$investigador->escalafonProfesoral->nombre})."]);
+            }
+        }
+
         $horas->update([
             'periodo_id' => $request->periodo_id,
             'horas' => $request->horas,

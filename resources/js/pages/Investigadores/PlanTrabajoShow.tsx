@@ -113,6 +113,9 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
     // Verificar si se puede editar basado en el estado del plan
     const canEditByState = planTrabajo.estado === 'Creado' || planTrabajo.estado === 'Corrección';
     const canEditPlan = hasPermission('editar-planes-trabajo') && canEditByState;
+    console.log(investigador.id);
+    console.log(user?.id);
+    console.log(planTrabajo.estado);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -161,7 +164,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                 )}
                                 
                                 {/* Botón enviar a revisión (solo para el investigador del plan) */}
-                                {(planTrabajo.estado === 'Creado' || planTrabajo.estado === 'Corrección') &&  user?.id !== investigador.id && 
+                                {(planTrabajo.estado === 'Creado' || planTrabajo.estado === 'Corrección') &&  user?.id == investigador.id && 
                                 (
                                     <Button
                                         onClick={() => {

@@ -25,6 +25,8 @@ class RoleSeeder extends Seeder
             // Asignar permisos base según el rol
             if ($roleName === 'Investigador') {
                 $permisos = [
+                    // Usuarios
+                    'ver-usuario',
                     // Proyectos
                     'ver-proyecto', 'crear-proyecto', 'editar-proyecto',
                     // Productos
@@ -39,10 +41,13 @@ class RoleSeeder extends Seeder
                     // Usuarios
                     'crear-usuario', 'editar-usuario',
                     // Grupos de investigación
-                    'editar-grupo-investigacion',
+                    'editar-grupo-investigacion', 'ver-grupo-investigacion',
                     // Proyectos y entregas
                     'ver-proyecto', 'revisar-proyecto', 'aprobar-proyecto',
                     'ver-entrega', 'revisar-entrega', 'aprobar-entrega',
+                    // Convocatorias
+                    'ver-convocatorias',
+                    'ver-postulaciones', 'crear-postulaciones',
                 ];
                 $role->syncPermissions(Permission::whereIn('name', $permisos)->get());
             }
@@ -52,13 +57,15 @@ class RoleSeeder extends Seeder
                     'ver-usuario', 'crear-usuario', 'editar-usuario',
                     // Grupos de investigación
                     'ver-grupo-investigacion', 'crear-grupo-investigacion', 'editar-grupo-investigacion',
-                    'ver-actividad-investigacion', 'crear-actividad-investigacion', 'editar-actividad-investigacion',
-                    'ver-tipo-producto', 'crear-tipo-producto', 'editar-tipo-producto',
-                    'ver-subtipo-producto', 'crear-subtipo-producto', 'editar-subtipo-producto',
+
+         
                     // Proyecto
                     'ver-proyecto', 'crear-proyecto', 'editar-proyecto',
                     //Producto
                     'ver-producto', 'crear-producto', 'editar-producto',
+                    // Proyectos y entregas
+                    'ver-proyecto', 'revisar-proyecto', 'aprobar-proyecto',
+                    'ver-entrega', 'revisar-entrega', 'aprobar-entrega',
 
                     // Parámetros
                     'ver-parametros','crear-parametros', 'editar-parametros',
@@ -66,6 +73,10 @@ class RoleSeeder extends Seeder
                     'ver-roles', 'crear-roles', 'editar-roles',
                     // Permisos
                     'ver-permisos', 'crear-permisos', 'editar-permisos',
+                    // Convocatorias
+                    'ver-convocatorias', 'crear-convocatorias', 'editar-convocatorias',
+                    // Postulaciones
+                    'ver-postulaciones', 'revisar-postulaciones', 'aprobar-postulaciones', 'rechazar-postulaciones',
 
                 ];
                 $role->syncPermissions(Permission::whereIn('name', $permisos)->get());

@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText, Download } from 'lucide-react';
+import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText, Download, Eye } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -124,7 +124,12 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                                 }
                                             </TableCell>
                                             {mostrarAcciones && (
-                                                <TableCell className='flex gap-2 justify-end'>
+                                                <TableCell className='flex gap-2 justify-center'>
+                                                    <Link href={route('investigadores.show', investigador.id)} prefetch>
+                                                        <Button variant="outline" size="sm" title="Ver perfil del investigador">
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
                                                     {hasPermission('editar-usuario') && (
                                                         <Link href={route('investigadores.edit', investigador.id)} prefetch>
                                                             <Button variant="outline" size="sm" title="Editar investigador">

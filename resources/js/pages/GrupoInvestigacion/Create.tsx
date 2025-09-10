@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -24,11 +25,17 @@ export default function GrupoInvestigacionCreate() {
     const { data, setData, post, processing, errors, reset } = useForm({
         nombre: '',
         correo: '',
+        descripcion: '',
+        objetivos: '',
+        vision: '',
+        mision: '',
+        plan_trabajo: null as File | null,
     });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         post(route('grupo-investigacion.store'), {
+            forceFormData: true,
             onSuccess: () => reset()
         });
     };
@@ -80,6 +87,61 @@ export default function GrupoInvestigacionCreate() {
                                         value={data.correo}
                                         onChange={(e) => setData('correo', e.target.value)}
                                         placeholder="Ingrese el correo electrónico del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="descripcion">Descripción</Label>
+                                    <Textarea
+                                        id="descripcion"
+                                        value={data.descripcion}
+                                        onChange={(e) => setData('descripcion', e.target.value)}
+                                        placeholder="Describe el grupo de investigación"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="objetivos">Objetivos</Label>
+                                    <Textarea
+                                        id="objetivos"
+                                        value={data.objetivos}
+                                        onChange={(e) => setData('objetivos', e.target.value)}
+                                        placeholder="Objetivos del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="vision">Visión</Label>
+                                    <Textarea
+                                        id="vision"
+                                        value={data.vision}
+                                        onChange={(e) => setData('vision', e.target.value)}
+                                        placeholder="Visión del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="mision">Misión</Label>
+                                    <Textarea
+                                        id="mision"
+                                        value={data.mision}
+                                        onChange={(e) => setData('mision', e.target.value)}
+                                        placeholder="Misión del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="plan_trabajo">Plan de Trabajo (PDF, Word o Excel)</Label>
+                                    <Input
+                                        id="plan_trabajo"
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                        onChange={(e) => setData('plan_trabajo', e.target.files?.[0] ?? null)}
                                         className="mt-1"
                                     />
                                 </div>

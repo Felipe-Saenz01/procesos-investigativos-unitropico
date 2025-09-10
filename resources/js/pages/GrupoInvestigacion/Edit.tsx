@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -24,6 +25,12 @@ interface GrupoInvestigacion {
     id: number;
     nombre: string;
     correo: string;
+    descripcion?: string;
+    objetivos?: string;
+    vision?: string;
+    mision?: string;
+    ruta_plan_trabajo?: string | null;
+    nombre_archivo_plan_trabajo?: string;
 }
 
 interface GrupoInvestigacionEditProps {
@@ -31,14 +38,38 @@ interface GrupoInvestigacionEditProps {
 }
 
 export default function GrupoInvestigacionEdit({ grupoInvestigacion }: GrupoInvestigacionEditProps) {
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         nombre: grupoInvestigacion.nombre,
         correo: grupoInvestigacion.correo,
+        descripcion: grupoInvestigacion.descripcion ?? '',
+        objetivos: grupoInvestigacion.objetivos ?? '',
+        vision: grupoInvestigacion.vision ?? '',
+        mision: grupoInvestigacion.mision ?? '',
+        plan_trabajo: null as File | null,
     });
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        put(route('grupo-investigacion.update', grupoInvestigacion.id));
+        
+        // Crear FormData para manejar archivos
+        // const formData = new FormData();
+        // formData.append('nombre', data.nombre);
+        // formData.append('correo', data.correo);
+        // formData.append('descripcion', data.descripcion);
+        // formData.append('objetivos', data.objetivos);
+        // formData.append('vision', data.vision);
+        // formData.append('mision', data.mision);
+        
+        // if (data.plan_trabajo) {
+        //     formData.append('plan_trabajo', data.plan_trabajo);
+        // }
+        
+        // put(route('grupo-investigacion.update', grupoInvestigacion.id), formData, {
+        //     forceFormData: true
+        // });
+        post(route('grupo-investigacion.editFile', grupoInvestigacion.id),{
+            forceFormData: true
+        });
     };
 
     return (
@@ -90,6 +121,82 @@ export default function GrupoInvestigacionEdit({ grupoInvestigacion }: GrupoInve
                                         placeholder="Ingrese el correo electrónico del grupo"
                                         className="mt-1"
                                     />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="descripcion">Descripción</Label>
+                                    <Textarea
+                                        id="descripcion"
+                                        value={data.descripcion}
+                                        onChange={(e) => setData('descripcion', e.target.value)}
+                                        placeholder="Describe el grupo de investigación"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="objetivos">Objetivos</Label>
+                                    <Textarea
+                                        id="objetivos"
+                                        value={data.objetivos}
+                                        onChange={(e) => setData('objetivos', e.target.value)}
+                                        placeholder="Objetivos del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="vision">Visión</Label>
+                                    <Textarea
+                                        id="vision"
+                                        value={data.vision}
+                                        onChange={(e) => setData('vision', e.target.value)}
+                                        placeholder="Visión del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="mision">Misión</Label>
+                                    <Textarea
+                                        id="mision"
+                                        value={data.mision}
+                                        onChange={(e) => setData('mision', e.target.value)}
+                                        placeholder="Misión del grupo"
+                                        className="mt-1"
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="plan_trabajo">Plan de Trabajo (PDF, Word o Excel)</Label>
+                                    <Input
+                                        id="plan_trabajo"
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.xls,.xlsx"
+                                        onChange={(e) => setData('plan_trabajo', e.target.files?.[0] ?? null)}
+                                        className="mt-1"
+                                    />
+                                    {grupoInvestigacion.ruta_plan_trabajo && (
+                                        <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                                            <p className="text-sm text-gray-600 mb-2">Archivo actual:</p>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => window.open(route('grupo-investigacion.descargar-plan', grupoInvestigacion.id), '_blank')}
+                                                >
+                                                    Descargar archivo actual
+                                                </Button>
+                                                <span className="text-xs text-gray-500">
+                                                    {grupoInvestigacion.nombre_archivo_plan_trabajo || 'plan_trabajo.pdf'}
+                                                </span>
+                                                <span className="text-xs text-gray-400">
+                                                    (Se reemplazará si subes uno nuevo)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

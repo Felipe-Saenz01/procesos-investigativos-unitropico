@@ -21,9 +21,9 @@ class PermissionSeeder extends Seeder
             'parametros',
             'roles',
             'permisos',
-            'actividad-investigacion',
-            'tipo-contrato',
-            'escalafon-profresoral',
+            'planes-trabajo',
+            'convocatorias',
+            'postulaciones',
         ];
         $acciones = [
             'ver',

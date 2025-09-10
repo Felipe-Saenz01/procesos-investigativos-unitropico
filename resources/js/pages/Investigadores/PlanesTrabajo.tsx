@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Plus, SquarePen, Trash, List } from 'lucide-react';
+import { CircleCheckBig, CircleX, Plus, SquarePen, Trash, List, ArrowLeft } from 'lucide-react';
 import { FormEvent } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
 
@@ -58,11 +58,11 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Investigadores',
-            href: route('investigadores.index'),
+            href: route('investigadores.show', investigador.id),
         },
         {
             title: investigador.name,
-            href: '#',
+            href: route('investigadores.show', investigador.id),
         },
         {
             title: 'Planes de Trabajo',
@@ -80,9 +80,17 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                             <h1 className='text-2xl font-bold m-5'>Planes de Trabajo</h1>
                             <p className='ml-5 text-gray-600'>Investigador: {investigador.name}</p>
                         </div>
-                        <Link href={route('investigadores.planes-trabajo.create', investigador.id)} prefetch>
-                            <Button className="ml-4"><Plus /> Nuevo Plan</Button>
-                        </Link>
+                        <div className="flex gap-3">
+                            <Link href={route('investigadores.show', investigador.id)}>
+                                <Button variant="outline">
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    Volver
+                                </Button>
+                            </Link>
+                            <Link href={route('investigadores.planes-trabajo.create', investigador.id)} prefetch>
+                                <Button className="ml-4"><Plus /> Nuevo Plan</Button>
+                            </Link>
+                        </div>
                     </div>
                     <div className='p-5'>
                         {flash?.success &&

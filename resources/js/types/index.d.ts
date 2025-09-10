@@ -49,6 +49,22 @@ export interface User {
     [key: string]: unknown; // This allows for additional properties...
 }
 
+export interface GrupoInvestigacion {
+    id: number;
+    nombre: string;
+    correo: string;
+    descripcion?: string;
+    objetivos?: string;
+    vision?: string;
+    mision?: string;
+    ruta_plan_trabajo?: string;
+    nombre_archivo_plan_trabajo?: string;
+    created_at: string;
+    updated_at: string;
+    usuarios: Usuario[];
+}
+
+
 export interface Convocatoria {
     id: number;
     nombre: string;

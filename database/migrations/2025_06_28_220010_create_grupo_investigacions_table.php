@@ -15,6 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('nombre');
             $table->string('correo')->unique();
+            $table->text('descripcion')->nullable();
+            $table->text('objetivos')->nullable();
+            $table->text('vision')->nullable();
+            $table->text('mision')->nullable();
+            $table->string('ruta_plan_trabajo')->nullable();
+            $table->string('nombre_archivo_plan_trabajo')->nullable();            
             $table->timestamps();
         });
     }

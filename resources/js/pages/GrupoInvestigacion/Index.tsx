@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleCheckBig, CircleX, Plus, SquarePen, Trash } from 'lucide-react';
+import { usePermissions } from '@/hooks/use-permissions';
 import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,25 +52,19 @@ interface PageProps {
 export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoInvestigacionProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
+    const { hasPermission } = usePermissions();
     // const puedeCrearUsuario = auth?.user?.permissions?.includes('crear-usuario');
-
-    const getTipoBadge = (tipo: string) => {
-        if (tipo === 'Lider Grupo') {
-            return <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">Líder Grupo</Badge>;
-        }
-        return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Investigador</Badge>;
-    };
 
     const getInvestigadoresText = (usuarios: Usuario[]) => {
         if (usuarios.length === 0) {
             return <span className="text-gray-400">Sin investigadores</span>;
         }
-        return usuarios.map((usuario) => (
-            <div key={usuario.id} className="flex items-center gap-2 mb-1">
-                <span className="text-sm">{usuario.name}</span>
-                {getTipoBadge(usuario.tipo)}
-            </div>
-        ));
+        return (
+        <div>
+            <Badge variant="secondary" className="bg-gray-200 mr-2">{usuarios.length}</Badge>
+            Investigadores
+        </div>
+        );
     };
 
     return (
@@ -79,14 +74,11 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
                     <div className='flex flex-row items-center justify-between p-5'>
                         <h1 className='text-2xl font-bold m-5'>Grupos de Investigación</h1>
-                        {/* {puedeCrearUsuario && (
-                          <Link href={route('usuarios.create')} prefetch>
-                            <Button className="ml-4">Agregar Investigador</Button>
-                          </Link>
-                        )} */}
-                        <Link href={route('grupo-investigacion.create')} prefetch>
-                            <Button><Plus /> Nuevo Grupo</Button>
-                        </Link>
+                        {hasPermission('crear-grupo-investigacion') && (
+                            <Link href={route('grupo-investigacion.create')} prefetch>
+                                <Button><Plus /> Nuevo Grupo</Button>
+                            </Link>
+                        )}
                     </div>
                     <div className='p-5'>
                         {flash?.success &&
@@ -110,23 +102,21 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
                             <Table className=''>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className='w-1/4'>Nombre del Grupo</TableHead>
-                                        <TableHead className='w-1/4'>Correo</TableHead>
-                                        <TableHead className='w-1/2'>Investigadores</TableHead>
-                                        <TableHead className='w-1/6'>Acciones</TableHead>
+                                        <TableHead className=''>Nombre del Grupo</TableHead>
+                                        <TableHead className=''>Correo</TableHead>
+                                        <TableHead className=''>Investigadores</TableHead>
+                                        <TableHead className=''>Acciones</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {gruposInvestigacion.map((grupo) => (
                                         <TableRow key={grupo.id}>
-                                            <TableCell className='w-1/4 font-medium'>{grupo.nombre}</TableCell>
-                                            <TableCell className='w-1/4'>{grupo.correo}</TableCell>
-                                            <TableCell className='w-1/2'>
-                                                <div className="space-y-1">
-                                                    {getInvestigadoresText(grupo.usuarios)}
-                                                </div>
+                                            <TableCell className='font-medium'>{grupo.nombre}</TableCell>
+                                            <TableCell className=''>{grupo.correo}</TableCell>
+                                            <TableCell className=''>
+                                                {getInvestigadoresText(grupo.usuarios)}
                                             </TableCell>
-                                            <TableCell className='w-1/6 flex gap-2 justify-end'>
+                                            <TableCell className='flex gap-2 justify-center'>
                                                 <Link href={route('grupo-investigacion.edit', grupo.id)} prefetch>
                                                     <Button variant="outline" size="sm"><SquarePen /></Button>
                                                 </Link>

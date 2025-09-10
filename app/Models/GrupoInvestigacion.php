@@ -12,7 +12,16 @@ class GrupoInvestigacion extends Model
     /** @use HasFactory<\Database\Factories\GrupoInvestigacionFactory> */
     use HasFactory;
 
-    protected $fillable = ['nombre', 'correo'];
+    protected $fillable = [
+        'nombre',
+        'correo',
+        'descripcion',
+        'objetivos',
+        'vision',
+        'mision',
+        'ruta_plan_trabajo',
+        'nombre_archivo_plan_trabajo',
+    ];
 
     public function usuarios(): HasMany
     {

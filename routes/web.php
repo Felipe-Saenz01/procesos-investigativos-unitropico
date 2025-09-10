@@ -1,22 +1,42 @@
 <?php
 
-use App\Http\Controllers\ConvocatoriaController;
-use App\Http\Controllers\ElementosProductoController;
-use App\Http\Controllers\EntregaProductoController;
-use App\Http\Controllers\GrupoInvestigacionController;
-use App\Http\Controllers\InvestigadorController;
-use App\Http\Controllers\Parametros\PermisoController;
-use App\Http\Controllers\Parametros\RolController;
-use App\Http\Controllers\Parametros\EscalafonProfesoralController;
-use App\Http\Controllers\Parametros\ActividadesInvestigacionController;
-use App\Http\Controllers\Parametros\TipoContratoController;
-use App\Http\Controllers\PdfController;
-use App\Http\Controllers\PeriodoController;
-use App\Http\Controllers\PostulacionController;
-use App\Http\Controllers\ProductoInvestigativoController;
-use App\Http\Controllers\ProyectoInvestigativoController;
-use App\Http\Controllers\SubTipoProductoController;
-use App\Http\Controllers\TipoProductoController;
+use App\Http\Controllers\{
+    ConvocatoriaController,
+    ElementosProductoController,
+    EntregaProductoController,
+    GrupoInvestigacionController,
+    InvestigadorController,
+    PdfController,
+    PeriodoController,
+    PostulacionController,
+    ProductoInvestigativoController,
+    ProyectoInvestigativoController,
+    SubTipoProductoController,
+    TipoProductoController,
+};
+use App\Http\Controllers\Parametros\{
+    PermisoController,
+    RolController,
+    EscalafonProfesoralController,
+    ActividadesInvestigacionController,
+    TipoContratoController,
+};
+
+// use App\Http\Controllers\ElementosProductoController;
+// use App\Http\Controllers\EntregaProductoController;
+// use App\Http\Controllers\GrupoInvestigacionController;
+// use App\Http\Controllers\InvestigadorController;
+// use App\Http\Controllers\Parametros\RolController;
+// use App\Http\Controllers\Parametros\EscalafonProfesoralController;
+// use App\Http\Controllers\Parametros\ActividadesInvestigacionController;
+// use App\Http\Controllers\Parametros\TipoContratoController;
+// use App\Http\Controllers\PdfController;
+// use App\Http\Controllers\PeriodoController;
+// use App\Http\Controllers\PostulacionController;
+// use App\Http\Controllers\ProductoInvestigativoController;
+// use App\Http\Controllers\ProyectoInvestigativoController;
+// use App\Http\Controllers\SubTipoProductoController;
+// use App\Http\Controllers\TipoProductoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -61,11 +81,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('postulaciones/{postulacion}/archivos/{archivo}/observaciones', [PostulacionController::class, 'actualizarObservaciones'])->name('postulaciones.archivos.observaciones');
 
     Route::resource('grupo-investigacion', GrupoInvestigacionController::class);
+    Route::post('grupo-investigacion/{grupoInvestigacion}/editFile', [GrupoInvestigacionController::class, 'update'])->name('grupo-investigacion.editFile');
+    Route::get('grupo-investigacion/{grupoInvestigacion}/descargar-plan', [GrupoInvestigacionController::class, 'descargarPlanTrabajo'])->name('grupo-investigacion.descargar-plan');
     
     // Rutas para Investigadores
     Route::get('investigadores', [InvestigadorController::class, 'index'])->name('investigadores.index');
     Route::get('investigadores/create', [InvestigadorController::class, 'create'])->name('investigadores.create');
     Route::post('investigadores', [InvestigadorController::class, 'store'])->name('investigadores.store');
+    Route::get('investigadores/{investigador}', [InvestigadorController::class, 'show'])->name('investigadores.show');
     Route::get('investigadores/{investigador}/edit', [InvestigadorController::class, 'edit'])->name('investigadores.edit');
     Route::put('investigadores/{investigador}', [InvestigadorController::class, 'update'])->name('investigadores.update');
     Route::delete('investigadores/{investigador}', [InvestigadorController::class, 'destroy'])->name('investigadores.destroy');

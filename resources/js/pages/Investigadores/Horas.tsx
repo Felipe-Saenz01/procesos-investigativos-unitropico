@@ -45,6 +45,11 @@ interface Investigador {
     name: string;
     email: string;
     role: string;
+    escalafon_profesoral: {
+        id: number;
+        nombre: string;
+        horas_semanales: number;
+    };
 }
 
 interface HorasProps {
@@ -63,47 +68,51 @@ interface PageProps {
 export default function HorasInvestigacion({ investigador, horasInvestigacion, periodos }: HorasProps) {
     const { flash } = usePage().props as PageProps;
     const [editingId, setEditingId] = useState<number | null>(null);
-    
-    const { data, setData, post, processing, errors, reset } = useForm({
+
+    const { data, setData, post, put, processing, errors, reset } = useForm({
         periodo_id: '',
         horas: '',
         estado: 'Inactivo'
     });
 
-    const { data: editData, setData: setEditData, put, processing: editProcessing, reset: resetEdit } = useForm({
-        horas: '',
-        estado: ''
-    });
-
     const { delete: destroy } = useForm();
+
+    // Calcular validaciones
+    const horasMaximas = investigador.escalafon_profesoral?.horas_semanales || 0;
+    const horasSolicitadas = parseInt(data.horas) || 0;
+    const horasExceden = horasSolicitadas > horasMaximas;
+    const formularioValido = data.periodo_id && data.horas && !horasExceden;
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
-        post(route('investigadores.horas.store', investigador.id), {
-            onSuccess: () => {
-                reset();
-            }
-        });
+        if (editingId) {
+            // Modo edición
+            put(route('investigadores.horas.update', [investigador.id, editingId]), {
+                onSuccess: () => {
+                    setEditingId(null);
+                    reset();
+                }
+            });
+        } else {
+            // Modo creación
+            post(route('investigadores.horas.store', investigador.id), {
+                onSuccess: () => {
+                    reset();
+                }
+            });
+        }
     };
 
     const handleEdit = (horas: HorasInvestigacion) => {
         setEditingId(horas.id);
-        setEditData({
-            horas: horas.horas.toString(),
-            estado: horas.estado
-        });
+        setData('periodo_id', horas.periodo_id.toString());
+        setData('horas', horas.horas.toString());
+        setData('estado', horas.estado);
     };
 
-    const handleUpdate = (e: FormEvent) => {
-        e.preventDefault();
-        if (editingId) {
-            put(route('investigadores.horas.update', [investigador.id, editingId]), {
-                onSuccess: () => {
-                    setEditingId(null);
-                    resetEdit();
-                }
-            });
-        }
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        reset();
     };
 
     const handleDelete = (horasId: number) => {
@@ -134,7 +143,7 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
                             <h1 className='text-2xl font-bold m-5'>Horas de Investigación</h1>
                             <p className='mx-5 text-gray-600'>Investigador: {investigador.name}</p>
                         </div>
-                        <Link href={route('investigadores.index')} className='mr-5'>
+                        <Link href={route('investigadores.show', investigador.id)} className='mr-5'>
                             <Button variant="outline"> <ArrowLeft className="h-4 w-4" /> Volver</Button>
                         </Link>
                     </div>
@@ -202,9 +211,19 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
                                                 value={data.horas}
                                                 onChange={(e) => setData('horas', e.target.value)}
                                                 placeholder="Ingrese las horas"
-                                                className="mt-1"
+                                                className={`mt-1 ${horasExceden ? 'border-red-500 focus:border-red-500' : ''}`}
                                                 min="0"
                                             />
+                                            {investigador.escalafon_profesoral && (
+                                                <p className={`text-sm mt-1 ${horasExceden ? 'text-red-600' : 'text-gray-600'}`}>
+                                                    Máximo permitido: {horasMaximas} horas ({investigador.escalafon_profesoral.nombre})
+                                                </p>
+                                            )}
+                                            {horasExceden && (
+                                                <p className="text-sm text-red-600 mt-1">
+                                                    Las horas exceden el límite permitido
+                                                </p>
+                                            )}
                                         </div>
                                         
                                         <div>
@@ -224,9 +243,23 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
                                         </div>
                                     </div>
                                     
-                                    <div className="flex justify-end">
-                                        <Button type='submit' disabled={processing} className='bg-primary hover:bg-primary/90'>
-                                            {processing ? 'Asignando...' : 'Asignar Horas'}
+                                    <div className="flex justify-end gap-2">
+                                        {editingId && (
+                                            <Button 
+                                                type='button' 
+                                                variant="outline" 
+                                                onClick={handleCancelEdit}
+                                                disabled={processing}
+                                            >
+                                                Cancelar
+                                            </Button>
+                                        )}
+                                        <Button 
+                                            type='submit' 
+                                            disabled={processing || !formularioValido} 
+                                            className='bg-primary hover:bg-primary/90'
+                                        >
+                                            {processing ? 'Procesando...' : editingId ? 'Actualizar Horas' : 'Asignar Horas'}
                                         </Button>
                                     </div>
                                 </form>
@@ -264,62 +297,22 @@ export default function HorasInvestigacion({ investigador, horasInvestigacion, p
                                                     <TableCell>{getEstadoBadge(horas.estado)}</TableCell>
                                                     <TableCell>{new Date(horas.created_at).toLocaleDateString()}</TableCell>
                                                     <TableCell className='flex gap-2'>
-                                                        {editingId === horas.id ? (
-                                                            <form onSubmit={handleUpdate} className="flex gap-2">
-                                                                <Input
-                                                                    type="number"
-                                                                    value={editData.horas}
-                                                                    onChange={(e) => setEditData('horas', e.target.value)}
-                                                                    className="w-20"
-                                                                    min="0"
-                                                                />
-                                                                <Select 
-                                                                    value={editData.estado} 
-                                                                    onValueChange={(value) => setEditData('estado', value)}
-                                                                >
-                                                                    <SelectTrigger className="w-24">
-                                                                        <SelectValue />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="Activo">Activo</SelectItem>
-                                                                        <SelectItem value="Inactivo">Inactivo</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <Button type='submit' size="sm" disabled={editProcessing}>
-                                                                    {editProcessing ? '...' : '✓'}
-                                                                </Button>
-                                                                <Button 
-                                                                    type='button' 
-                                                                    variant="outline" 
-                                                                    size="sm"
-                                                                    onClick={() => {
-                                                                        setEditingId(null);
-                                                                        resetEdit();
-                                                                    }}
-                                                                >
-                                                                    ✕
-                                                                </Button>
-                                                            </form>
-                                                        ) : (
-                                                            <>
-                                                                <Button 
-                                                                    variant="outline" 
-                                                                    size="sm"
-                                                                    onClick={() => handleEdit(horas)}
-                                                                    title="Editar horas"
-                                                                >
-                                                                    <SquarePen className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="destructive" 
-                                                                    size="sm"
-                                                                    onClick={() => handleDelete(horas.id)}
-                                                                    title="Eliminar horas"
-                                                                >
-                                                                    <Trash className="h-4 w-4" />
-                                                                </Button>
-                                                            </>
-                                                        )}
+                                                        <Button 
+                                                            variant="outline" 
+                                                            size="sm"
+                                                            onClick={() => handleEdit(horas)}
+                                                            title="Editar horas"
+                                                        >
+                                                            <SquarePen className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            variant="destructive" 
+                                                            size="sm"
+                                                            onClick={() => handleDelete(horas.id)}
+                                                            title="Eliminar horas"
+                                                        >
+                                                            <Trash className="h-4 w-4" />
+                                                        </Button>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
