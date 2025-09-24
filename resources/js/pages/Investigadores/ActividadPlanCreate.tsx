@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SearchSelect } from '@/components/form-search-select';
+import { Slider } from '@/components/ui/slider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -42,7 +43,8 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
         alcance: '',
         entregable: '',
         horas_semana: '',
-        total_horas: ''
+        total_horas: '',
+        porcentaje_progreso: 0
     });
 
     const handleSubmit = (e: FormEvent) => {
@@ -118,6 +120,11 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
                                         name="actividad_investigacion_id"
                                     />
                                 </div>
+                                <div className="bg-blue-50 p-3 rounded-lg">
+                                    <p className="text-sm text-blue-700">
+                                        <strong>Período:</strong> Esta actividad heredará automáticamente el período del plan de trabajo ({planTrabajo.nombre})
+                                    </p>
+                                </div>
                                 <div>
                                     <Label htmlFor="alcance">Alcance</Label>
                                     <Textarea
@@ -167,6 +174,23 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
                                         placeholder="0"
                                         min="0"
                                     />
+                                </div>
+                                <div>
+                                    <Label htmlFor="porcentaje_progreso">Progreso de la Actividad</Label>
+                                    <div className="mt-2 space-y-2">
+                                        <Slider
+                                            value={[data.porcentaje_progreso]}
+                                            onValueChange={(value) => setData('porcentaje_progreso', value[0])}
+                                            max={100}
+                                            step={1}
+                                            className="w-full"
+                                        />
+                                        <div className="flex justify-between text-sm text-gray-500">
+                                            <span>0%</span>
+                                            <span className="font-medium">{data.porcentaje_progreso}%</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

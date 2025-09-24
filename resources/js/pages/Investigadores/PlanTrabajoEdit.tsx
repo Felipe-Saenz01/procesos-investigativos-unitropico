@@ -17,23 +17,31 @@ interface Investigador {
     tipo: string;
 }
 
+interface Periodo {
+    id: number;
+    nombre: string;
+}
+
 interface PlanTrabajo {
     id: number;
     nombre: string;
     vigencia: string;
     estado: string;
+    periodo_id?: number;
 }
 
 interface EditProps {
     investigador: Investigador;
     planTrabajo: PlanTrabajo;
+    periodos: Periodo[];
 }
 
-export default function PlanTrabajoEdit({ investigador, planTrabajo }: EditProps) {
+export default function PlanTrabajoEdit({ investigador, planTrabajo, periodos }: EditProps) {
     const { data, setData, put, errors } = useForm({
         id: planTrabajo.id,
         nombre: planTrabajo.nombre,
         vigencia: planTrabajo.vigencia,
+        periodo_id: planTrabajo.periodo_id?.toString() || '',
         estado: 'Pendiente' // Estado fijo al editar
     });
 
@@ -65,6 +73,11 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo }: EditProps
         { value: 'Anual', label: 'Anual' },
         { value: 'Semestral', label: 'Semestral' }
     ];
+
+    const periodoOptions = periodos.map(periodo => ({
+        value: periodo.id.toString(),
+        label: periodo.nombre
+    }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -113,6 +126,16 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo }: EditProps
                                         onValueChange={(value) => setData('vigencia', String(value))}
                                         placeholder="Seleccionar vigencia..."
                                         name="vigencia"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="periodo_id">Período Activo</Label>
+                                    <SearchSelect
+                                        options={periodoOptions}
+                                        value={data.periodo_id}
+                                        onValueChange={(value) => setData('periodo_id', String(value))}
+                                        placeholder="Seleccionar período..."
+                                        name="periodo_id"
                                     />
                                 </div>
                                 <div>

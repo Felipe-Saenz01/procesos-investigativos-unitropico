@@ -17,14 +17,21 @@ interface Investigador {
     tipo: string;
 }
 
-interface CreateProps {
-    investigador: Investigador;
+interface Periodo {
+    id: number;
+    nombre: string;
 }
 
-export default function PlanTrabajoCreate({ investigador }: CreateProps) {
+interface CreateProps {
+    investigador: Investigador;
+    periodos: Periodo[];
+}
+
+export default function PlanTrabajoCreate({ investigador, periodos }: CreateProps) {
     const { data, setData, post, errors, reset } = useForm({
         nombre: '',
         vigencia: '',
+        periodo_id: '',
         estado: 'Creado' // Estado fijo por defecto
     });
 
@@ -58,6 +65,11 @@ export default function PlanTrabajoCreate({ investigador }: CreateProps) {
         { value: 'Anual', label: 'Anual' },
         { value: 'Semestral', label: 'Semestral' }
     ];
+
+    const periodoOptions = periodos.map(periodo => ({
+        value: periodo.id.toString(),
+        label: periodo.nombre
+    }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -106,6 +118,16 @@ export default function PlanTrabajoCreate({ investigador }: CreateProps) {
                                         onValueChange={(value) => setData('vigencia', String(value))}
                                         placeholder="Seleccionar vigencia..."
                                         name="vigencia"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="periodo_id">Período Activo</Label>
+                                    <SearchSelect
+                                        options={periodoOptions}
+                                        value={data.periodo_id}
+                                        onValueChange={(value) => setData('periodo_id', String(value))}
+                                        placeholder="Seleccionar período..."
+                                        name="periodo_id"
                                     />
                                 </div>
                                 <div>

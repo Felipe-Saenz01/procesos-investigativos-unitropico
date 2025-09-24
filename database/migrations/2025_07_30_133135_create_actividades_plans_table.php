@@ -15,10 +15,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('plan_trabajo_id')->constrained('plan_trabajos')->onDelete('cascade');
             $table->foreignId('actividad_investigacion_id')->constrained('actividades_investigacions');
+            $table->foreignId('periodo_id')->constrained('periodos');
             $table->string('alcance');
             $table->text('entregable');
             $table->integer('horas_semana');
             $table->integer('total_horas');
+            $table->unsignedTinyInteger('porcentaje_progreso')->default(0);
             $table->timestamps();
         });
     }

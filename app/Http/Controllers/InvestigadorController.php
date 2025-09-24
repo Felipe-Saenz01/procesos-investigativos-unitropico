@@ -257,8 +257,10 @@ class InvestigadorController extends Controller
 
     public function createPlanTrabajo(User $investigador)
     {
+        $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
         return inertia('Investigadores/PlanTrabajoCreate', [
             'investigador' => $investigador,
+            'periodos' => $periodos,
         ]);
     }
 
@@ -267,11 +269,13 @@ class InvestigadorController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'vigencia' => 'required|in:Anual,Semestral',
+            'periodo_id' => 'required|exists:periodos,id',
         ]);
 
         $investigador->planesTrabajo()->create([
             'nombre' => $request->nombre,
             'vigencia' => $request->vigencia,
+            'periodo_id' => $request->periodo_id,
             'estado' => 'Creado', // Estado inicial editable
         ]);
 
@@ -281,9 +285,11 @@ class InvestigadorController extends Controller
     public function editPlanTrabajo(User $investigador, $planTrabajoId)
     {
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
         return inertia('Investigadores/PlanTrabajoEdit', [
             'investigador' => $investigador,
             'planTrabajo' => $planTrabajo,
+            'periodos' => $periodos,
         ]);
     }
 
@@ -293,11 +299,13 @@ class InvestigadorController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255',
             'vigencia' => 'required|in:Anual,Semestral',
+            'periodo_id' => 'required|exists:periodos,id',
         ]);
 
         $planTrabajo->update([
             'nombre' => $request->nombre,
             'vigencia' => $request->vigencia,
+            'periodo_id' => $request->periodo_id,
             // No cambiar el estado, mantener el actual
         ]);
 
@@ -315,10 +323,9 @@ class InvestigadorController extends Controller
     public function showPlanTrabajo(User $investigador, $planTrabajoId)
     {
         $planTrabajo = $investigador->planesTrabajo()
-            ->with(['actividades.actividadInvestigacion', 'revisiones.revisor'])
+            ->with(['actividades.actividadInvestigacion', 'revisiones.revisor', 'informes.evidencias.actividadPlan.actividadInvestigacion'])
             ->findOrFail($planTrabajoId);
         
-        // return $planTrabajo;
         
         return inertia('Investigadores/PlanTrabajoShow', [
             'investigador' => $investigador,
@@ -363,14 +370,17 @@ class InvestigadorController extends Controller
             'entregable' => 'required|string|max:1000',
             'horas_semana' => 'required|integer|min:1',
             'total_horas' => 'required|integer|min:1',
+            'porcentaje_progreso' => 'required|integer|min:0|max:100',
         ]);
 
         $planTrabajo->actividades()->create([
             'actividad_investigacion_id' => $request->actividad_investigacion_id,
+            'periodo_id' => $planTrabajo->periodo_id, // Heredar del plan de trabajo
             'alcance' => $request->alcance,
             'entregable' => $request->entregable,
             'horas_semana' => $request->horas_semana,
             'total_horas' => $request->total_horas,
+            'porcentaje_progreso' => $request->porcentaje_progreso,
         ]);
 
         return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Actividad del plan creada exitosamente.');
@@ -401,6 +411,7 @@ class InvestigadorController extends Controller
             'entregable' => 'required|string|max:1000',
             'horas_semana' => 'required|integer|min:1',
             'total_horas' => 'required|integer|min:1',
+            'porcentaje_progreso' => 'required|integer|min:0|max:100',
         ]);
 
         $actividad->update([
@@ -409,6 +420,8 @@ class InvestigadorController extends Controller
             'entregable' => $request->entregable,
             'horas_semana' => $request->horas_semana,
             'total_horas' => $request->total_horas,
+            'porcentaje_progreso' => $request->porcentaje_progreso,
+            // El periodo_id se mantiene igual (heredado del plan)
         ]);
 
         return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Actividad del plan actualizada exitosamente.');

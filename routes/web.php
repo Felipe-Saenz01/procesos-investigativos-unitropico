@@ -5,6 +5,7 @@ use App\Http\Controllers\{
     ElementosProductoController,
     EntregaProductoController,
     GrupoInvestigacionController,
+    InformePlanTrabajoController,
     InvestigadorController,
     PdfController,
     PeriodoController,
@@ -120,6 +121,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}/edit', [InvestigadorController::class, 'editActividadPlan'])->name('investigadores.actividades-plan.edit');
     Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}', [InvestigadorController::class, 'updateActividadPlan'])->name('investigadores.actividades-plan.update');
     Route::delete('investigadores/{investigador}/planes-trabajo/{planTrabajo}/actividades/{actividadPlan}', [InvestigadorController::class, 'destroyActividadPlan'])->name('investigadores.actividades-plan.destroy');
+
+    // Rutas para informes de plan de trabajo
+    Route::post('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes', [InformePlanTrabajoController::class, 'store'])->name('investigadores.planes-trabajo.informes.store');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes', [InformePlanTrabajoController::class, 'index'])->name('investigadores.planes-trabajo.informes.index');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/create', [InformePlanTrabajoController::class, 'create'])->name('investigadores.planes-trabajo.informes.create');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/pdf', [InformePlanTrabajoController::class, 'generarPdf'])->name('investigadores.planes-trabajo.informes.pdf');
+Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/preview', [InformePlanTrabajoController::class, 'previewPdf'])->name('investigadores.planes-trabajo.informes.preview');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/evidencias/{evidencia}/descargar', [InformePlanTrabajoController::class, 'descargarEvidencia'])->name('investigadores.planes-trabajo.informes.evidencias.descargar');
 
     // Rutas para Proyectos Investigativos
     Route::resource('proyectos', ProyectoInvestigativoController::class);

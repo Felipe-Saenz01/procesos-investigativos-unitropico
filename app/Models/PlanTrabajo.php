@@ -14,6 +14,7 @@ class PlanTrabajo extends Model
 
     protected $fillable = [
         'user_id',
+        'periodo_id',
         'nombre',
         'vigencia',
         'estado'
@@ -28,10 +29,26 @@ class PlanTrabajo extends Model
     }
 
     /**
+     * Relación con el período asociado al plan
+     */
+    public function periodo(): BelongsTo
+    {
+        return $this->belongsTo(Periodo::class);
+    }
+
+    /**
      * Relación con las actividades del plan
      */
     public function actividades(): HasMany
     {
         return $this->hasMany(ActividadesPlan::class);
+    }
+
+    /**
+     * Relación con los informes del plan
+     */
+    public function informes(): HasMany
+    {
+        return $this->hasMany(InformePlanTrabajo::class);
     }
 }

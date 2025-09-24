@@ -174,4 +174,91 @@
         color: #8b5cf6;
         font-weight: bold;
     }
+    
+    /* Estilos para barras de progreso - COMENTADOS TEMPORALMENTE */
+    /*
+    .progress-bar {
+        width: 100%;
+        height: 15px;
+        background-color: #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 3px;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background-color: #10b981;
+        transition: width 0.3s ease;
+    }
+    */
+    
+    /* Estilos del resumen de progreso - COMENTADOS TEMPORALMENTE */
+    /*
+    .progress-summary {
+        margin-top: var(--spacing-lg);
+        padding: var(--spacing-md);
+        background-color: var(--bg-accent);
+        border-radius: 5px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .progress-summary h3 {
+        color: var(--primary-color);
+        margin: 0 0 var(--spacing-md) 0;
+        font-size: var(--font-lg);
+    }
+    
+    .progress-overview {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        background-color: white;
+        border-radius: 3px;
+        border: 1px solid var(--border-primary);
+    }
+    
+    .progress-label {
+        font-weight: bold;
+        color: var(--text-primary);
+    }
+    
+    .progress-value {
+        font-weight: bold;
+        color: var(--primary-color);
+        font-size: var(--font-lg);
+    }
+    */
+    
+    /* Estilos específicos para informe preview */
+    .progress-change {
+        font-weight: bold;
+        color: #059669;
+        font-size: var(--font-sm);
+    }
+    
+    /* Estilos de evidencias - COMENTADOS TEMPORALMENTE */
+    /*
+    .evidence-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .evidence-item {
+        font-size: var(--font-sm);
+        padding: 2px 4px;
+        background-color: var(--bg-accent);
+        border-radius: 3px;
+        text-align: center;
+    }
+    */
 </style>
