@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Plus, SquarePen, Trash } from 'lucide-react';
+import { CircleCheckBig, CircleX, Eye, Plus, SquarePen, Trash } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { FormEvent } from 'react';
 
@@ -60,10 +60,10 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
             return <span className="text-gray-400">Sin investigadores</span>;
         }
         return (
-        <div>
-            <Badge variant="secondary" className="bg-gray-200 mr-2">{usuarios.length}</Badge>
-            Investigadores
-        </div>
+            <div>
+                <Badge variant="secondary" className="bg-gray-200 mr-2">{usuarios.length}</Badge>
+                Investigadores
+            </div>
         );
     };
 
@@ -117,6 +117,11 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
                                                 {getInvestigadoresText(grupo.usuarios)}
                                             </TableCell>
                                             <TableCell className='flex gap-2 justify-center'>
+                                                <Link href={route('grupo-investigacion.show', grupo.id)} prefetch>
+                                                    <Button variant="outline" size="sm" title="Ver perfil del investigador">
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                                 <Link href={route('grupo-investigacion.edit', grupo.id)} prefetch>
                                                     <Button variant="outline" size="sm"><SquarePen /></Button>
                                                 </Link>

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\ActividadesInvestigacion;
 use App\Models\TipoProducto;
+use App\Models\ActividadesPlan;
+use App\Models\PlanTrabajo;
 
 class ProductoInvestigativoController extends Controller
 {
@@ -20,12 +22,33 @@ class ProductoInvestigativoController extends Controller
      */
     public function index()
     {
-        $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto', 'usuarios'])
-            ->whereHas('usuarios', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $user = Auth::user();
+        
+        // Lógica de permisos por rol
+        if ($user->hasRole('Administrador')) {
+            // Administrador ve todos los productos
+            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } elseif ($user->hasRole('Lider Grupo')) {
+            // Líder ve productos de investigadores de su grupo
+            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+                ->whereHas('usuarios', function ($query) use ($user) {
+                    $query->whereHas('grupoInvestigacion', function ($q) use ($user) {
+                        $q->where('id', $user->grupo_investigacion_id);
+                    });
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } else {
+            // Investigador ve solo sus productos
+            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+                ->whereHas('usuarios', function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
 
         return Inertia::render('Productos/Index', [
             'productos' => $productos,
@@ -42,11 +65,52 @@ class ProductoInvestigativoController extends Controller
             $query->where('user_id', $user->id);
         })->where('estado', '!=', 'Formulación')->get(['id', 'titulo']);
         
-        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
-        
+        // Actividades de investigación permitidas: asociadas a actividades de planes Aprobados del investigador
+        $actividadIds = ActividadesPlan::whereHas('planTrabajo', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('estado', 'Aprobado');
+            })
+            ->pluck('actividad_investigacion_id')
+            ->unique()
+            ->filter()
+            ->values();
+
+        $actividadesInvestigacion = ActividadesInvestigacion::whereIn('id', $actividadIds)->get(['id', 'nombre']);
+
+        // Pre-cargar tipos y subtipos por actividad para evitar llamadas adicionales desde el front
+        $tipos = TipoProducto::whereIn('actividad_investigacion_id', $actividadIds)
+            ->with(['subTipos' => function($q) { $q->select('id','nombre','tipo_producto_id'); }])
+            ->get(['id','nombre','actividad_investigacion_id']);
+
+        $actividadesConTipos = $actividadesInvestigacion->map(function($act) use ($tipos) {
+            $tiposDeActividad = $tipos->where('actividad_investigacion_id', $act->id)
+                ->values()
+                ->map(function($t){
+                    return [
+                        'id' => $t->id,
+                        'nombre' => $t->nombre,
+                        'sub_tipos' => $t->subTipos->map(function($st){
+                            return [ 'id' => $st->id, 'nombre' => $st->nombre ];
+                        })->values(),
+                    ];
+                });
+            return [
+                'id' => $act->id,
+                'nombre' => $act->nombre,
+                'tipos' => $tiposDeActividad,
+            ];
+        })->values();
+
+        // Obtener usuarios disponibles para el multi-select (solo Investigadores y Líderes)
+        $usuarios = User::select('id', 'name', 'tipo')
+            ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
+            ->get();
+
         return inertia('Productos/Create', [
             'proyectos' => $proyectos,
             'actividadesInvestigacion' => $actividadesInvestigacion,
+            'actividadesConTipos' => $actividadesConTipos,
+            'usuarios' => $usuarios,
+            'usuarioLogueado' => $user->id,
         ]);
     }
 
@@ -57,17 +121,39 @@ class ProductoInvestigativoController extends Controller
     {
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            'proyecto_investigativo_id' => 'required|exists:proyecto_investigativos,id',
+            'resumen' => 'required|string',
+            'proyecto_investigacion_id' => 'required|exists:proyecto_investigativos,id',
             'sub_tipo_producto_id' => 'required|exists:sub_tipo_productos,id',
+            'usuarios' => 'required|array|min:1',
+            'usuarios.*' => 'exists:users,id',
         ]);
+
+        // Validación de consistencia de actividad permitida (plan aprobado)
+        $user = Auth::user();
+        $subTipo = SubTipoProducto::with('tipoProducto')->findOrFail($request->sub_tipo_producto_id);
+        $tipo = $subTipo->tipoProducto;
+        if (!$tipo) {
+            return back()->withErrors(['sub_tipo_producto_id' => 'El subtipo no pertenece a un tipo válido.']);
+        }
+        $actividadTipoId = $tipo->actividad_investigacion_id;
+        $actividadPermitida = ActividadesPlan::where('actividad_investigacion_id', $actividadTipoId)
+            ->whereHas('planTrabajo', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('estado', 'Aprobado');
+            })
+            ->exists();
+        if (!$actividadPermitida) {
+            return back()->withErrors(['sub_tipo_producto_id' => 'El subtipo seleccionado no corresponde a una actividad permitida de un plan aprobado.']);
+        }
 
         $producto = ProductoInvestigativo::create([
             'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'proyecto_investigativo_id' => $request->proyecto_investigativo_id,
+            'resumen' => $request->resumen,
+            'proyecto_investigacion_id' => $request->proyecto_investigacion_id,
             'sub_tipo_producto_id' => $request->sub_tipo_producto_id,
         ]);
+
+        // Asociar el producto a los usuarios seleccionados
+        $producto->usuarios()->attach($request->usuarios);
 
         return to_route('productos.index')->with('success', 'Producto investigativo creado exitosamente.');
     }
@@ -77,7 +163,8 @@ class ProductoInvestigativoController extends Controller
      */
     public function show(ProductoInvestigativo $producto)
     {
-        if (!$producto->usuarios->contains(Auth::id())) {
+        $user = Auth::user();
+        if (!$producto->usuarios->contains($user->id) and $user->hasRole('Investigador')) {
             abort(403, 'No tienes permisos para ver este producto.');
         }
 
@@ -115,7 +202,7 @@ class ProductoInvestigativoController extends Controller
         })->values();
 
         return Inertia::render('Productos/Show', [
-            'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios']),
+            'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios', 'elementos']),
             'periodos' => $periodos,
         ]);
     }
@@ -128,7 +215,8 @@ class ProductoInvestigativoController extends Controller
         $user = Auth::user();
         
         // Verificar que el usuario tenga acceso al proyecto del producto
-        $proyecto = $producto->proyectoInvestigativo;
+        $proyecto = $producto->proyecto;
+        
         if (!$proyecto->usuarios()->where('user_id', $user->id)->exists()) {
             abort(403, 'No tienes acceso a este producto.');
         }
@@ -142,15 +230,64 @@ class ProductoInvestigativoController extends Controller
             $query->where('user_id', $user->id);
         })->where('estado', '!=', 'Formulación')->get(['id', 'titulo']);
         
-        $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
+        
+        // Actividades permitidas por planes Aprobados del investigador
+        $actividadIds = ActividadesPlan::whereHas('planTrabajo', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('estado', 'Aprobado');
+            })
+            ->pluck('actividad_investigacion_id')
+            ->unique()
+            ->filter()
+            ->values();
+
+        // Asegurar incluir la actividad ligada al producto actual para no romper el formulario
+        $producto->load('subTipoProducto.tipoProducto.actividadInvestigacion');
+        $actividadActualId = optional(optional($producto->subTipoProducto)->tipoProducto)->actividad_investigacion_id;
+        if ($actividadActualId && !$actividadIds->contains($actividadActualId)) {
+            $actividadIds->push($actividadActualId);
+        }
+
+        $actividadesInvestigacion = ActividadesInvestigacion::whereIn('id', $actividadIds)->get(['id', 'nombre']);
         
         // Cargar las relaciones necesarias para el filtrado
-        $producto->load('subTipoProducto.tipoProducto.actividadInvestigacion');
+        $producto->load(['subTipoProducto.tipoProducto.actividadInvestigacion', 'usuarios']);
         
+        // Pre-cargar tipos y subtipos por actividad para evitar llamadas adicionales desde el front
+        $tipos = TipoProducto::whereIn('actividad_investigacion_id', $actividadIds)
+            ->with(['subTipos' => function($q) { $q->select('id','nombre','tipo_producto_id'); }])
+            ->get(['id','nombre','actividad_investigacion_id']);
+
+        $actividadesConTipos = $actividadesInvestigacion->map(function($act) use ($tipos) {
+            $tiposDeActividad = $tipos->where('actividad_investigacion_id', $act->id)
+                ->values()
+                ->map(function($t){
+                    return [
+                        'id' => $t->id,
+                        'nombre' => $t->nombre,
+                        'sub_tipos' => $t->subTipos->map(function($st){
+                            return [ 'id' => $st->id, 'nombre' => $st->nombre ];
+                        })->values(),
+                    ];
+                });
+            return [
+                'id' => $act->id,
+                'nombre' => $act->nombre,
+                'tipos' => $tiposDeActividad,
+            ];
+        })->values();
+
+        // Obtener usuarios disponibles para el multi-select (solo Investigadores y Líderes)
+        $usuarios = User::select('id', 'name', 'tipo')
+            ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
+            ->get();
+
         return inertia('Productos/Edit', [
             'producto' => $producto,
             'proyectos' => $proyectos,
             'actividadesInvestigacion' => $actividadesInvestigacion,
+            'actividadesConTipos' => $actividadesConTipos,
+            'usuarios' => $usuarios,
+            'usuarioLogueado' => $user->id,
         ]);
     }
 
@@ -161,17 +298,39 @@ class ProductoInvestigativoController extends Controller
     {
         $request->validate([
             'titulo' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            'proyecto_investigativo_id' => 'required|exists:proyecto_investigativos,id',
+            'resumen' => 'required|string',
+            'proyecto_investigacion_id' => 'required|exists:proyecto_investigativos,id',
             'sub_tipo_producto_id' => 'required|exists:sub_tipo_productos,id',
+            'usuarios' => 'required|array|min:1',
+            'usuarios.*' => 'exists:users,id',
         ]);
+
+        // Validación de consistencia de actividad permitida (plan aprobado)
+        $user = Auth::user();
+        $subTipo = SubTipoProducto::with('tipoProducto')->findOrFail($request->sub_tipo_producto_id);
+        $tipo = $subTipo->tipoProducto;
+        if (!$tipo) {
+            return back()->withErrors(['sub_tipo_producto_id' => 'El subtipo no pertenece a un tipo válido.']);
+        }
+        $actividadTipoId = $tipo->actividad_investigacion_id;
+        $actividadPermitida = ActividadesPlan::where('actividad_investigacion_id', $actividadTipoId)
+            ->whereHas('planTrabajo', function ($q) use ($user) {
+                $q->where('user_id', $user->id)->where('estado', 'Aprobado');
+            })
+            ->exists();
+        if (!$actividadPermitida) {
+            return back()->withErrors(['sub_tipo_producto_id' => 'El subtipo seleccionado no corresponde a una actividad permitida de un plan aprobado.']);
+        }
 
         $producto->update([
             'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'proyecto_investigativo_id' => $request->proyecto_investigativo_id,
+            'resumen' => $request->resumen,
+            'proyecto_investigacion_id' => $request->proyecto_investigacion_id,
             'sub_tipo_producto_id' => $request->sub_tipo_producto_id,
         ]);
+
+        // Sincronizar usuarios del producto
+        $producto->usuarios()->sync($request->usuarios);
 
         return to_route('productos.index')->with('success', 'Producto investigativo actualizado exitosamente.');
     }

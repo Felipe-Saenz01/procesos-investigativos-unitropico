@@ -5,16 +5,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SearchSelect } from '@/components/form-search-select';
+import { MultiSelect, type Option } from '@/components/ui/multiselect-combobox';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
 import { FormEvent, useState, useEffect } from 'react';
-import axios from 'axios';
 
 interface Proyecto {
     id: number;
     titulo: string;
+}
+
+interface Usuario {
+    id: number;
+    name: string;
+    tipo: string;
 }
 
 interface ActividadInvestigacion {
@@ -32,19 +38,35 @@ interface SubTipoProducto {
     nombre: string;
 }
 
+interface ActividadConTipos {
+    id: number;
+    nombre: string;
+    tipos: { id: number; nombre: string; sub_tipos: { id: number; nombre: string }[] }[];
+}
+
 interface CreateProps {
     proyectos: Proyecto[];
     actividadesInvestigacion: ActividadInvestigacion[];
+    actividadesConTipos: ActividadConTipos[];
+    usuarios: Usuario[];
+    usuarioLogueado: number;
 }
 
-export default function Create({ proyectos, actividadesInvestigacion }: CreateProps) {
+export default function Create({ proyectos, actividadesInvestigacion, actividadesConTipos, usuarios, usuarioLogueado }: CreateProps) {
+    // Convertir usuarios a opciones para MultiSelect
+    const usuarioOptions: Option[] = usuarios.map(u => ({ 
+        label: `${u.name} (${u.tipo})`, 
+        value: u.id.toString() 
+    }));
+
     const { data, setData, post, errors, processing, reset } = useForm({
         titulo: '',
-        descripcion: '',
-        proyecto_investigativo_id: '',
+        resumen: '',
+        proyecto_investigacion_id: '',
         actividad_investigacion_id: '',
         tipo_producto_id: '',
         sub_tipo_producto_id: '',
+        usuarios: [usuarioLogueado.toString()] as string[],
     });
 
     const [tiposProducto, setTiposProducto] = useState<TipoProducto[]>([]);
@@ -83,8 +105,8 @@ export default function Create({ proyectos, actividadesInvestigacion }: CreatePr
         label: subTipo.nombre
     }));
 
-    // Función para cargar tipos de producto cuando se selecciona una actividad
-    const cargarTiposProducto = async (actividadId: string) => {
+    // Carga local desde el objeto pre-cargado
+    const cargarTiposProducto = (actividadId: string) => {
         if (!actividadId) {
             setTiposProducto([]);
             setSubTiposProducto([]);
@@ -92,43 +114,30 @@ export default function Create({ proyectos, actividadesInvestigacion }: CreatePr
             setData('sub_tipo_producto_id', '');
             return;
         }
-
         setLoadingTipos(true);
-        try {
-            const response = await axios.get(route('productos.tipos-por-actividad'), {
-                params: { actividad_investigacion_id: actividadId }
-            });
-            setTiposProducto(response.data);
-            setSubTiposProducto([]);
-            setData('tipo_producto_id', '');
-            setData('sub_tipo_producto_id', '');
-        } catch (error) {
-            console.error('Error al cargar tipos de producto:', error);
-        } finally {
-            setLoadingTipos(false);
-        }
+        const actividad = actividadesConTipos.find(a => String(a.id) === String(actividadId));
+        const tipos = (actividad?.tipos || []).map(t => ({ id: t.id, nombre: t.nombre }));
+        setTiposProducto(tipos);
+        setSubTiposProducto([]);
+        setData('tipo_producto_id', '');
+        setData('sub_tipo_producto_id', '');
+        setLoadingTipos(false);
     };
 
     // Función para cargar subtipos de producto cuando se selecciona un tipo
-    const cargarSubTiposProducto = async (tipoId: string) => {
+    const cargarSubTiposProducto = (tipoId: string) => {
         if (!tipoId) {
             setSubTiposProducto([]);
             setData('sub_tipo_producto_id', '');
             return;
         }
-
         setLoadingSubTipos(true);
-        try {
-            const response = await axios.get(route('productos.subtipos-por-tipo'), {
-                params: { tipo_producto_id: tipoId }
-            });
-            setSubTiposProducto(response.data);
-            setData('sub_tipo_producto_id', '');
-        } catch (error) {
-            console.error('Error al cargar subtipos de producto:', error);
-        } finally {
-            setLoadingSubTipos(false);
-        }
+        const actividad = actividadesConTipos.find(a => String(a.id) === String(data.actividad_investigacion_id));
+        const tipo = actividad?.tipos.find(t => String(t.id) === String(tipoId));
+        const subtipos = (tipo?.sub_tipos || []).map(st => ({ id: st.id, nombre: st.nombre }));
+        setSubTiposProducto(subtipos);
+        setData('sub_tipo_producto_id', '');
+        setLoadingSubTipos(false);
     };
 
     // Efecto para cargar tipos cuando cambia la actividad
@@ -190,25 +199,25 @@ export default function Create({ proyectos, actividadesInvestigacion }: CreatePr
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="descripcion">Descripción</Label>
+                                    <Label htmlFor="resumen">Descripción</Label>
                                     <Textarea
-                                        id='descripcion'
+                                        id='resumen'
                                         className="mt-1"
-                                        value={data.descripcion}
-                                        onChange={(e) => setData('descripcion', e.target.value)}
-                                        name='descripcion'
+                                        value={data.resumen}
+                                        onChange={(e) => setData('resumen', e.target.value)}
+                                        name='resumen'
                                         placeholder="Ingrese la descripción del producto"
                                         rows={4}
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="proyecto_investigativo_id">Proyecto</Label>
+                                    <Label htmlFor="proyecto_investigacion_id">Proyecto</Label>
                                     <SearchSelect
                                         options={proyectoOptions}
-                                        value={data.proyecto_investigativo_id}
-                                        onValueChange={(value) => setData('proyecto_investigativo_id', String(value))}
+                                        value={data.proyecto_investigacion_id}
+                                        onValueChange={(value) => setData('proyecto_investigacion_id', String(value))}
                                         placeholder="Seleccionar proyecto..."
-                                        name="proyecto_investigativo_id"
+                                        name="proyecto_investigacion_id"
                                     />
                                 </div>
                                 <div>
@@ -241,6 +250,16 @@ export default function Create({ proyectos, actividadesInvestigacion }: CreatePr
                                         placeholder={loadingSubTipos ? "Cargando subtipos..." : "Seleccionar subtipo de producto..."}
                                         name="sub_tipo_producto_id"
                                         disabled={loadingSubTipos || !data.tipo_producto_id}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Usuarios del Producto *</Label>
+                                    <MultiSelect
+                                        options={usuarioOptions}
+                                        selected={data.usuarios}
+                                        onChange={(selected) => setData('usuarios', selected)}
+                                        placeholder="Seleccionar usuarios..."
+                                        className="mb-4"
                                     />
                                 </div>
                             </div>

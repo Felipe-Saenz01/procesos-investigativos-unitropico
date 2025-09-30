@@ -14,6 +14,7 @@ use App\Models\EscalafonProfesoral;
 use App\Models\PlanTrabajo;
 use App\Models\ActividadesPlan;
 use App\Models\ActividadesInvestigacion;
+use App\Models\InformePlanTrabajo;
 
 class InvestigadorController extends Controller
 {
@@ -326,11 +327,131 @@ class InvestigadorController extends Controller
             ->with(['actividades.actividadInvestigacion', 'revisiones.revisor', 'informes.evidencias.actividadPlan.actividadInvestigacion'])
             ->findOrFail($planTrabajoId);
         
+        $eligibility = $this->computeInformeEligibility($planTrabajo);
         
         return inertia('Investigadores/PlanTrabajoShow', [
             'investigador' => $investigador,
             'planTrabajo' => $planTrabajo,
+            'informeEligibility' => $eligibility,
         ]);
+    }
+
+    /**
+     * Calcula la viabilidad para presentar informe del plan de trabajo.
+     * - Semestral: máximo 1 informe en el período del plan, y dentro de su ventana de fechas.
+     * - Anual: hasta 2 informes. El segundo debe ser en un período activo cuya fecha_limite_planeacion esté entre
+     *          [fecha_limite_evidencias del período base, fecha_limite_planeacion del período base + 1 año], y dentro de su ventana de fechas.
+     */
+    private function computeInformeEligibility(PlanTrabajo $planTrabajo): array
+    {
+        $periodoBase = Periodo::find($planTrabajo->periodo_id);
+        if (!$periodoBase) {
+            return [
+                'canCreate' => false,
+                'presentedCount' => 0,
+                'allowedPeriodId' => null,
+                'reason' => 'El período del plan no existe.',
+                'missingNextPeriod' => false,
+            ];
+        }
+
+        $hoy = now();
+        $inWindowBase = $hoy->between($periodoBase->fecha_limite_planeacion, $periodoBase->fecha_limite_evidencias);
+
+        $presentedCount = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)->count();
+
+        if ($planTrabajo->vigencia === 'Semestral') {
+            if ($presentedCount >= 1) {
+                return [
+                    'canCreate' => false,
+                    'presentedCount' => $presentedCount,
+                    'allowedPeriodId' => null,
+                    'reason' => 'Ya existe un informe para este período (plan semestral).',
+                    'missingNextPeriod' => false,
+                ];
+            }
+            return [
+                'canCreate' => $inWindowBase,
+                'presentedCount' => $presentedCount,
+                'allowedPeriodId' => $inWindowBase ? $periodoBase->id : null,
+                'reason' => $inWindowBase ? null : 'Fuera de las fechas del período del plan.',
+                'missingNextPeriod' => false,
+            ];
+        }
+
+        if ($planTrabajo->vigencia === 'Anual') {
+            if ($presentedCount === 0) {
+                return [
+                    'canCreate' => $inWindowBase,
+                    'presentedCount' => 0,
+                    'allowedPeriodId' => $inWindowBase ? $periodoBase->id : null,
+                    'reason' => $inWindowBase ? null : 'Fuera de las fechas del período del plan.',
+                    'missingNextPeriod' => false,
+                ];
+            }
+
+            if ($presentedCount >= 2) {
+                return [
+                    'canCreate' => false,
+                    'presentedCount' => $presentedCount,
+                    'allowedPeriodId' => null,
+                    'reason' => 'Ya se presentaron los informes permitidos para este plan anual.',
+                    'missingNextPeriod' => false,
+                ];
+            }
+
+            // Segundo informe: buscar período candidato entre [evidencias_base, planeacion_base + 1 año]
+            $limiteInferior = $periodoBase->fecha_limite_evidencias; // no traer periodos anteriores
+            $limiteSuperior = $periodoBase->fecha_limite_planeacion->copy()->addYear();
+
+            $periodosPosibles = Periodo::whereBetween('fecha_limite_planeacion', [$limiteInferior, $limiteSuperior])
+                ->orderBy('fecha_limite_planeacion', 'asc')
+                ->get();
+
+            $periodoCandidato = $periodosPosibles->first(function ($p) use ($hoy) {
+                return $hoy->between($p->fecha_limite_planeacion, $p->fecha_limite_evidencias);
+            });
+
+            if (!$periodoCandidato) {
+                return [
+                    'canCreate' => false,
+                    'presentedCount' => $presentedCount,
+                    'allowedPeriodId' => null,
+                    'reason' => 'Aún no hay un período activo dentro del rango permitido para el segundo informe.',
+                    'missingNextPeriod' => $periodosPosibles->isEmpty(),
+                ];
+            }
+
+            $yaHayEnCandidato = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)
+                ->where('periodo_id', $periodoCandidato->id)
+                ->exists();
+
+            if ($yaHayEnCandidato) {
+                return [
+                    'canCreate' => false,
+                    'presentedCount' => $presentedCount,
+                    'allowedPeriodId' => null,
+                    'reason' => 'Ya existe un informe en el período candidato.',
+                    'missingNextPeriod' => false,
+                ];
+            }
+
+            return [
+                'canCreate' => true,
+                'presentedCount' => $presentedCount,
+                'allowedPeriodId' => $periodoCandidato->id,
+                'reason' => null,
+                'missingNextPeriod' => false,
+            ];
+        }
+
+        return [
+            'canCreate' => false,
+            'presentedCount' => $presentedCount,
+            'allowedPeriodId' => null,
+            'reason' => 'Vigencia no soportada.',
+            'missingNextPeriod' => false,
+        ];
     }
 
     // --- Métodos de Actividades del Plan ---

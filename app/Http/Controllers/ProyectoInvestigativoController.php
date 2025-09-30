@@ -143,16 +143,16 @@ class ProyectoInvestigativoController extends Controller
         // Si el proyecto está en formulación, crear automáticamente el producto "Formulación del Proyecto"
         if ($estado === 'En Formulación') {
             // Buscar el subtipo de producto "Formulación de Proyectos" o crear uno por defecto
-            $subTipoFormulacion = SubTipoProducto::where('nombre', 'Formulación de Proyectos')->first();
+            $subTipoFormulacion = SubTipoProducto::where('nombre', 'Formulación-gestión de proyectos de investigación')->first();
             
             if (!$subTipoFormulacion) {
                 // Si no existe el subtipo, buscar o crear el tipo de producto primero
-                $tipoFormulacion = TipoProducto::where('nombre', 'Formulación de Proyectos')->first();
+                $tipoFormulacion = TipoProducto::where('nombre', 'Formulación-gestión de proyectos de investigación')->first();
                 
                 if (!$tipoFormulacion) {
                     // Crear el tipo de producto si no existe
                     $tipoFormulacion = TipoProducto::create([
-                        'nombre' => 'Formulación de Proyectos',
+                        'nombre' => 'Formulación-gestión de proyectos de investigación',
                         'descripcion' => 'Productos relacionados con la formulación de proyectos investigativos'
                     ]);
                 }

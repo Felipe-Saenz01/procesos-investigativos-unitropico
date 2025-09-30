@@ -5,12 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SearchSelect } from '@/components/form-search-select';
+import { MultiSelect, type Option } from '@/components/ui/multiselect-combobox';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
-import { FormEvent, useState, useEffect } from 'react';
-import axios from 'axios';
+import { FormEvent, useState, useEffect, useCallback } from 'react';
+
+
+interface Usuario {
+    id: number;
+    name: string;
+    tipo: string;
+}
 
 interface Proyecto {
     id: number;
@@ -20,6 +27,12 @@ interface Proyecto {
 interface ActividadInvestigacion {
     id: number;
     nombre: string;
+}
+
+interface ActividadConTipos {
+    id: number;
+    nombre: string;
+    tipos: { id: number; nombre: string; sub_tipos: { id: number; nombre: string }[] }[];
 }
 
 interface TipoProducto {
@@ -35,16 +48,17 @@ interface SubTipoProducto {
 interface Producto {
     id: number;
     titulo: string;
-    descripcion: string;
-    proyecto_investigativo_id: number;
+    resumen: string;
+    proyecto_investigacion_id: number;
     sub_tipo_producto_id: number;
-    subTipoProducto: {
+    usuarios: Usuario[];
+    sub_tipo_producto: {
         id: number;
         nombre: string;
-        tipoProducto: {
+        tipo_producto: {
             id: number;
             nombre: string;
-            actividadInvestigacion: {
+            actividad_investigacion: {
                 id: number;
                 nombre: string;
             };
@@ -56,16 +70,26 @@ interface EditProps {
     producto: Producto;
     proyectos: Proyecto[];
     actividadesInvestigacion: ActividadInvestigacion[];
+    actividadesConTipos: ActividadConTipos[];
+    usuarios: Usuario[];
+    usuarioLogueado: number;
 }
 
-export default function Edit({ producto, proyectos, actividadesInvestigacion }: EditProps) {
+export default function Edit({ producto, proyectos, actividadesInvestigacion, actividadesConTipos, usuarios }: EditProps) {
+    // Convertir usuarios a opciones para MultiSelect
+    const usuarioOptions: Option[] = usuarios.map(u => ({ 
+        label: `${u.name} (${u.tipo})`, 
+        value: u.id.toString() 
+    }));
+
     const { data, setData, put, errors, processing } = useForm({
         titulo: producto.titulo,
-        descripcion: producto.descripcion,
-        proyecto_investigativo_id: producto.proyecto_investigativo_id.toString(),
-        actividad_investigacion_id: producto.subTipoProducto.tipoProducto.actividadInvestigacion.id.toString(),
-        tipo_producto_id: producto.subTipoProducto.tipoProducto.id.toString(),
-        sub_tipo_producto_id: producto.sub_tipo_producto_id.toString(),
+        resumen: producto.resumen,
+        proyecto_investigacion_id: producto.proyecto_investigacion_id.toString(),
+        actividad_investigacion_id: producto.sub_tipo_producto.tipo_producto.actividad_investigacion.id.toString(),
+        tipo_producto_id: producto.sub_tipo_producto.tipo_producto.id.toString(),
+        sub_tipo_producto_id: producto.sub_tipo_producto.id.toString(),
+        usuarios: producto.usuarios.map(u => u.id.toString()),
     });
 
     const [tiposProducto, setTiposProducto] = useState<TipoProducto[]>([]);
@@ -108,84 +132,79 @@ export default function Edit({ producto, proyectos, actividadesInvestigacion }: 
         label: subTipo.nombre
     }));
 
-    // Función para cargar tipos de producto cuando se selecciona una actividad
-    const cargarTiposProducto = async (actividadId: string) => {
+    const cargarTiposProducto = useCallback((actividadId: string, limpiarDatos = true) => {
         if (!actividadId) {
             setTiposProducto([]);
             setSubTiposProducto([]);
-            setData('tipo_producto_id', '');
-            setData('sub_tipo_producto_id', '');
+            if (limpiarDatos) {
+                setData('tipo_producto_id', '');
+                setData('sub_tipo_producto_id', '');
+            }
             return;
         }
-
         setLoadingTipos(true);
-        try {
-            const response = await axios.get(route('productos.tipos-por-actividad'), {
-                params: { actividad_investigacion_id: actividadId }
-            });
-            setTiposProducto(response.data);
-            setSubTiposProducto([]);
+        const actividad = actividadesConTipos.find(a => String(a.id) === String(actividadId));
+        const tipos = (actividad?.tipos || []).map(t => ({ id: t.id, nombre: t.nombre }));
+        setTiposProducto(tipos);
+        setSubTiposProducto([]);
+        if (limpiarDatos) {
             setData('tipo_producto_id', '');
             setData('sub_tipo_producto_id', '');
-        } catch (error) {
-            console.error('Error al cargar tipos de producto:', error);
-        } finally {
-            setLoadingTipos(false);
         }
-    };
+        setLoadingTipos(false);
+    }, [actividadesConTipos, setData]);
 
     // Función para cargar subtipos de producto cuando se selecciona un tipo
-    const cargarSubTiposProducto = async (tipoId: string) => {
+    const cargarSubTiposProducto = useCallback((tipoId: string, limpiarDatos = true) => {
         if (!tipoId) {
             setSubTiposProducto([]);
-            setData('sub_tipo_producto_id', '');
+            if (limpiarDatos) {
+                setData('sub_tipo_producto_id', '');
+            }
             return;
         }
-
         setLoadingSubTipos(true);
-        try {
-            const response = await axios.get(route('productos.subtipos-por-tipo'), {
-                params: { tipo_producto_id: tipoId }
-            });
-            setSubTiposProducto(response.data);
+        const actividad = actividadesConTipos.find(a => String(a.id) === String(data.actividad_investigacion_id));
+        const tipo = actividad?.tipos.find(t => String(t.id) === String(tipoId));
+        const subtipos = (tipo?.sub_tipos || []).map(st => ({ id: st.id, nombre: st.nombre }));
+        setSubTiposProducto(subtipos);
+        if (limpiarDatos) {
             setData('sub_tipo_producto_id', '');
-        } catch (error) {
-            console.error('Error al cargar subtipos de producto:', error);
-        } finally {
-            setLoadingSubTipos(false);
         }
-    };
+        setLoadingSubTipos(false);
+    }, [actividadesConTipos, data.actividad_investigacion_id, setData]);
 
     // Cargar datos iniciales cuando se monta el componente
     useEffect(() => {
-        const cargarDatosIniciales = async () => {
-            // Cargar tipos para la actividad actual
-            if (data.actividad_investigacion_id) {
-                await cargarTiposProducto(data.actividad_investigacion_id);
-            }
-            
-            // Cargar subtipos para el tipo actual
-            if (data.tipo_producto_id) {
-                await cargarSubTiposProducto(data.tipo_producto_id);
-            }
-        };
-
-        cargarDatosIniciales();
-    }, []);
+        // Cargar tipos para la actividad actual sin limpiar datos
+        if (data.actividad_investigacion_id) {
+            const actividad = actividadesConTipos.find(a => String(a.id) === String(data.actividad_investigacion_id));
+            const tipos = (actividad?.tipos || []).map(t => ({ id: t.id, nombre: t.nombre }));
+            setTiposProducto(tipos);
+        }
+        
+        // Cargar subtipos para el tipo actual sin limpiar datos
+        if (data.tipo_producto_id) {
+            const actividad = actividadesConTipos.find(a => String(a.id) === String(data.actividad_investigacion_id));
+            const tipo = actividad?.tipos.find(t => String(t.id) === String(data.tipo_producto_id));
+            const subtipos = (tipo?.sub_tipos || []).map(st => ({ id: st.id, nombre: st.nombre }));
+            setSubTiposProducto(subtipos);
+        }
+    }, [actividadesConTipos, data.actividad_investigacion_id, data.tipo_producto_id]);
 
     // Efecto para cargar tipos cuando cambia la actividad
     useEffect(() => {
         if (data.actividad_investigacion_id) {
             cargarTiposProducto(data.actividad_investigacion_id);
         }
-    }, [data.actividad_investigacion_id]);
+    }, [data.actividad_investigacion_id, cargarTiposProducto]);
 
     // Efecto para cargar subtipos cuando cambia el tipo
     useEffect(() => {
         if (data.tipo_producto_id) {
             cargarSubTiposProducto(data.tipo_producto_id);
         }
-    }, [data.tipo_producto_id]);
+    }, [data.tipo_producto_id, cargarSubTiposProducto]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -230,25 +249,25 @@ export default function Edit({ producto, proyectos, actividadesInvestigacion }: 
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="descripcion">Descripción</Label>
+                                    <Label htmlFor="resumen">Descripción</Label>
                                     <Textarea
-                                        id='descripcion'
+                                        id='resumen'
                                         className="mt-1"
-                                        value={data.descripcion}
-                                        onChange={(e) => setData('descripcion', e.target.value)}
-                                        name='descripcion'
+                                        value={data.resumen}
+                                        onChange={(e) => setData('resumen', e.target.value)}
+                                        name='resumen'
                                         placeholder="Ingrese la descripción del producto"
                                         rows={4}
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="proyecto_investigativo_id">Proyecto</Label>
+                                    <Label htmlFor="proyecto_investigacion_id">Proyecto</Label>
                                     <SearchSelect
                                         options={proyectoOptions}
-                                        value={data.proyecto_investigativo_id}
-                                        onValueChange={(value) => setData('proyecto_investigativo_id', String(value))}
+                                        value={data.proyecto_investigacion_id}
+                                        onValueChange={(value) => setData('proyecto_investigacion_id', String(value))}
                                         placeholder="Seleccionar proyecto..."
-                                        name="proyecto_investigativo_id"
+                                        name="proyecto_investigacion_id"
                                     />
                                 </div>
                                 <div>
@@ -281,6 +300,16 @@ export default function Edit({ producto, proyectos, actividadesInvestigacion }: 
                                         placeholder={loadingSubTipos ? "Cargando subtipos..." : "Seleccionar subtipo de producto..."}
                                         name="sub_tipo_producto_id"
                                         disabled={loadingSubTipos || !data.tipo_producto_id}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Usuarios del Producto *</Label>
+                                    <MultiSelect
+                                        options={usuarioOptions}
+                                        selected={data.usuarios}
+                                        onChange={(selected) => setData('usuarios', selected)}
+                                        placeholder="Seleccionar usuarios..."
+                                        className="mb-4"
                                     />
                                 </div>
                             </div>

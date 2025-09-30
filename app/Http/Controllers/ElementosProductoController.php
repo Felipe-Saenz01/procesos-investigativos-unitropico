@@ -16,8 +16,9 @@ class ElementosProductoController extends Controller
      */
     public function index(ProductoInvestigativo $producto)
     {
+        $user = Auth::user();
         // Verificar que el usuario tenga acceso al producto
-        if (!$producto->usuarios->contains(Auth::id())) {
+        if (!$producto->usuarios->contains($user->id) and $user->hasRole('Investigador')) {
             abort(403, 'No tienes permisos para ver los elementos de este producto.');
         }
 

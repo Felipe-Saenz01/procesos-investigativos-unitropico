@@ -14,6 +14,14 @@ class GrupoInvestigacionController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+        if ($user->hasRole('Lider Grupo') || $user->hasRole('Investigador')) {
+            if ($user->grupo_investigacion_id) {
+                return to_route('grupo-investigacion.show', $user->grupo_investigacion_id);
+            }
+            return to_route('dashboard')->with('error', 'No perteneces a un grupo de investigación.');
+        }
+
         $gruposInvestigacion = GrupoInvestigacion::with(['usuarios' => function($query) {
             $query->select('id', 'name', 'email', 'tipo', 'grupo_investigacion_id');
         }])->orderBy('created_at', 'desc')->get();

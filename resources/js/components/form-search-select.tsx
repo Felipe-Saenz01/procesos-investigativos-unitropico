@@ -86,14 +86,16 @@ export function SearchSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between text-left overflow-hidden", className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          <span className="block truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full p-0" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
         <Command>
           <CommandInput placeholder={searchPlaceholder} className="h-9" />
           <CommandList>
@@ -108,7 +110,9 @@ export function SearchSelect({
                     setOpen(false)
                   }}
                 >
-                  {option.label}
+                  <span className="whitespace-normal break-words pr-6">
+                    {option.label}
+                  </span>
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",

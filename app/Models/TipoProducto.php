@@ -24,4 +24,10 @@ class TipoProducto extends Model
     {
         return $this->hasMany(SubTipoProducto::class);
     }
+
+    // Alias con nombre esperado en controladores/vistas
+    public function subTipos()
+    {
+        return $this->hasMany(SubTipoProducto::class);
+    }
 }

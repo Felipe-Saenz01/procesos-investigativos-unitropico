@@ -47,24 +47,13 @@ interface Usuario {
     tipo: string;
 }
 
-interface Entrega {
+interface ElementoProducto {
     id: number;
-    tipo: 'planeacion' | 'evidencia';
-    planeacion: Array<{
-        nombre: string;
-        porcentaje: number;
-    }>;
+    nombre: string;
+    descripcion: string;
+    estado: string;
     created_at: string;
-    periodo: {
-        id: number;
-        nombre: string;
-        fecha_limite_planeacion: string;
-        fecha_limite_evidencias: string;
-    };
-    usuario: {
-        id: number;
-        name: string;
-    };
+    updated_at: string;
 }
 
 interface ProductoInvestigativo {
@@ -77,6 +66,7 @@ interface ProductoInvestigativo {
     proyecto: Proyecto;
     sub_tipo_producto: SubTipoProducto;
     usuarios: Usuario[];
+    elementos: ElementoProducto[];
 }
 
 interface PeriodoEntrega {
@@ -105,7 +95,8 @@ interface ProductosShowProps {
 }
 
 export default function ProductosShow({ producto, periodos }: ProductosShowProps) {
-    const { flash } = usePage().props as any;
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string };
     
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('es-ES', {
@@ -168,25 +159,22 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                 </div>
 
                 <div className="space-y-6">
-                    {/* Primera fila: Información del producto y participantes */}
+                    {/* Primera fila: Información del producto (izq) y Participantes + Proyecto (der) */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Información del producto */}
+                        {/* Información del producto - Izquierda */}
                         <div className="lg:col-span-2">
-                            <Card>
+                            <Card className="h-full">
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <FileText className="h-5 w-5" />
-                                        Información del Producto
+                                    <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+                                        <FileText className="h-6 w-6"/>
+                                        {producto.titulo}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div>
-                                        <h3 className="font-semibold text-lg mb-2">{producto.titulo}</h3>
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <Badge variant="secondary">
-                                                {producto.sub_tipo_producto.nombre}
-                                            </Badge>
-                                        </div>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Badge variant="secondary">
+                                            {producto.sub_tipo_producto.nombre}
+                                        </Badge>
                                     </div>
 
                                     <Separator />
@@ -216,55 +204,13 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                             Progreso general del producto investigativo
                                         </p>
                                     </div>
-
-                                    <Separator />
-
-                                    {/* Proyecto asociado */}
-                                    <div>
-                                        <h4 className="font-medium mb-2">Proyecto Asociado</h4>
-                                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                                            <div>
-                                                <h5 className="font-medium">{producto.proyecto.titulo}</h5>
-                                                <p className="text-sm text-gray-500">Eje Temático: {producto.proyecto.eje_tematico}</p>
-                                            </div>
-                                            <Badge variant={producto.proyecto.estado === 'En Formulación' ? 'outline' : 'default'}>
-                                                {producto.proyecto.estado}
-                                            </Badge>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    {/* Elementos del producto */}
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-medium">Elementos del Producto</h4>
-                                            <Button asChild size="sm" variant="outline">
-                                                <Link href={`/productos/${producto.id}/elementos`}>
-                                                    <Plus className="h-4 w-4 mr-2" />
-                                                    Gestionar Elementos
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                        <div className="p-3 border rounded-lg">
-                                            <p className="text-sm text-gray-500 mb-2">
-                                                Los elementos definen los componentes específicos que conforman este producto investigativo.
-                                            </p>
-                                            <Button asChild size="sm" variant="outline">
-                                                <Link href={`/productos/${producto.id}/elementos`}>
-                                                    Ver Elementos
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    </div>
-
-
                                 </CardContent>
                             </Card>
                         </div>
 
-                        {/* Panel lateral - Participantes */}
-                        <div>
+                        {/* Panel lateral derecho - Participantes y Proyecto */}
+                        <div className="space-y-6">
+                            {/* Participantes */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
@@ -273,7 +219,7 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <ScrollArea className="md:h-[400px]">
+                                    <ScrollArea className="h-[200px]">
                                         <div className="space-y-3 pr-4">
                                             {producto.usuarios.map((usuario) => (
                                                 <div key={usuario.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -290,8 +236,78 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                     </ScrollArea>
                                 </CardContent>
                             </Card>
+
+                            {/* Proyecto asociado */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" />
+                                        Proyecto Asociado
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <h5 className="font-medium">{producto.proyecto.titulo}</h5>
+                                            <p className="text-sm text-gray-500">Eje Temático: {producto.proyecto.eje_tematico}</p>
+                                        </div>
+                                        <Badge variant={producto.proyecto.estado === 'En Formulación' ? 'outline' : 'default'}>
+                                            {producto.proyecto.estado}
+                                        </Badge>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
+
+                    {/* Segunda fila: Elementos del producto (ancho completo) */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5" />
+                                    Elementos del Producto ({producto.elementos.length})
+                                </CardTitle>
+                                <Button asChild size="sm" variant="outline">
+                                    <Link href={`/productos/${producto.id}/elementos`}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Gestionar Elementos
+                                    </Link>
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {producto.elementos.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {producto.elementos.map((elemento) => (
+                                        <div key={elemento.id} className="p-4 border rounded-lg">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <h4 className="font-medium">{elemento.nombre}</h4>
+                                                <Badge variant={elemento.estado === 'Completado' ? 'default' : 'secondary'}>
+                                                    {elemento.estado}
+                                                </Badge>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mb-3">{elemento.descripcion}</p>
+                                            <div className="text-xs text-gray-500">
+                                                Actualizado: {formatDate(elemento.updated_at)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-500 mb-4">No hay elementos definidos para este producto</p>
+                                    <Button asChild variant="outline">
+                                        <Link href={`/productos/${producto.id}/elementos`}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Crear Primer Elemento
+                                        </Link>
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     {/* Entregas ocupando todo el ancho */}
                     <Card>

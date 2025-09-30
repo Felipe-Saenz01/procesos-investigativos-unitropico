@@ -16,4 +16,10 @@ class ActividadesInvestigacion extends Model
     {
         return $this->hasMany(TipoProducto::class);
     }
+
+    // Alias con nombre más simple por consistencia en controladores
+    public function tipos()
+    {
+        return $this->hasMany(TipoProducto::class, 'actividad_investigacion_id');
+    }
 }

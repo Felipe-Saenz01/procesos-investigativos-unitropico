@@ -85,8 +85,8 @@ export function MultiSelect({
                   }}
                 >
                   {option.label}
-                  <button
-                    className="ml-1 rounded-full ring-offset-background outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  <span
+                    className="ml-1 rounded-full ring-offset-background outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer hover:bg-muted"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         handleUnselect(option.value);
@@ -101,9 +101,11 @@ export function MultiSelect({
                       e.stopPropagation();
                       handleUnselect(option.value);
                     }}
+                    role="button"
+                    tabIndex={0}
                   >
                     <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
+                  </span>
                 </Badge>
               ))
             ) : (
@@ -126,7 +128,7 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label}
                   onSelect={() => handleSelect(option.value)}
                 >
                   <Check

@@ -49,10 +49,16 @@ export default function ElementosIndex({ producto, elementos }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Elementos del Producto" />
-            
+
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <div>
+                            <h1 className="text-2xl font-bold">Elementos del Producto</h1>
+                            <p className="text-muted-foreground">{producto.titulo}</p>
+                        </div>
+                    </div>
                     <div className="flex items-center space-x-4">
                         <Link href={`/productos/${producto.id}`}>
                             <Button variant="outline" size="sm">
@@ -60,17 +66,13 @@ export default function ElementosIndex({ producto, elementos }: Props) {
                                 Volver
                             </Button>
                         </Link>
-                        <div>
-                            <h1 className="text-2xl font-bold">Elementos del Producto</h1>
-                            <p className="text-muted-foreground">{producto.titulo}</p>
-                        </div>
+                        <Link href={`/productos/${producto.id}/elementos/create`}>
+                            <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Nuevo Elemento
+                            </Button>
+                        </Link>
                     </div>
-                    <Link href={`/productos/${producto.id}/elementos/create`}>
-                        <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Nuevo Elemento
-                        </Button>
-                    </Link>
                 </div>
 
                 <div className="space-y-6">
@@ -136,8 +138,8 @@ export default function ElementosIndex({ producto, elementos }: Props) {
                                                 <TableCell>
                                                     <div className="flex items-center space-x-2">
                                                         <div className="w-20 bg-gray-200 rounded-full h-2">
-                                                            <div 
-                                                                className="bg-blue-600 h-2 rounded-full" 
+                                                            <div
+                                                                className="bg-blue-600 h-2 rounded-full"
                                                                 style={{ width: `${elemento.progreso}%` }}
                                                             />
                                                         </div>
@@ -161,7 +163,7 @@ export default function ElementosIndex({ producto, elementos }: Props) {
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
                                                         </Link>
-                                                        <Link 
+                                                        <Link
                                                             href={`/productos/${producto.id}/elementos/${elemento.id}`}
                                                             method="delete"
                                                             as="button"

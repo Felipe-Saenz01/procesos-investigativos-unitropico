@@ -17,7 +17,6 @@ class ProductoInvestigativo extends Model
         'titulo',
         'resumen',
         'proyecto_investigacion_id',
-        'user_id',
         'sub_tipo_producto_id',
         'progreso',
     ];

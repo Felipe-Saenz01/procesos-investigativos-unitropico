@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { Eye, Plus, FileText } from 'lucide-react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { Eye, Plus, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,7 +19,7 @@ interface SubTipoProducto {
     id: number;
     nombre: string;
     descripcion: string;
-    tipo_producto: {
+    tipoProducto: {
         id: number;
         nombre: string;
     };
@@ -52,10 +53,27 @@ interface ProductosIndexProps {
 }
 
 export default function ProductosIndex({ productos }: ProductosIndexProps) {
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Productos Investigativos" />
             <div className="flex h-full flex-1 flex-col items-center gap-4 rounded-xl p-4 overflow-x-auto">
+                {/* Alertas de éxito y error */}
+                {flash.success && (
+                    <Alert className="w-full max-w-4xl">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>{flash.success}</AlertDescription>
+                    </Alert>
+                )}
+                {flash.error && (
+                    <Alert variant="destructive" className="w-full max-w-4xl">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{flash.error}</AlertDescription>
+                    </Alert>
+                )}
+                
                 <div className='w-full'>
                     <Card>
                         <CardHeader>

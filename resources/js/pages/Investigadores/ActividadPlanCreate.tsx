@@ -110,6 +110,11 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
                                 </Alert>
                             }
                             <div className="space-y-4">
+                                <div className="bg-blue-50 p-3 rounded-lg">
+                                    <p className="text-sm text-blue-700">
+                                         Las actividades de investigación del siguiente filtro fueron obtenidas de la <strong>Resolución VI No. 003 de 2022</strong>
+                                    </p>
+                                </div>
                                 <div>
                                     <Label htmlFor="actividad_investigacion_id">Actividad de Investigación</Label>
                                     <SearchSelect
@@ -119,11 +124,6 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
                                         placeholder="Seleccionar actividad..."
                                         name="actividad_investigacion_id"
                                     />
-                                </div>
-                                <div className="bg-blue-50 p-3 rounded-lg">
-                                    <p className="text-sm text-blue-700">
-                                        <strong>Período:</strong> Esta actividad heredará automáticamente el período del plan de trabajo ({planTrabajo.nombre})
-                                    </p>
                                 </div>
                                 <div>
                                     <Label htmlFor="alcance">Alcance</Label>
