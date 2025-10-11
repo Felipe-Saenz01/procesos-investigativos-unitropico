@@ -6,7 +6,7 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone, BrainCircuit } from 'lucide-react';
 import AppLogo from './app-logo';
 
 // Extender NavItem para incluir permisos requeridos
@@ -49,6 +49,12 @@ const mainNavItems: NavItemWithPermissions[] = [
         href: route('convocatorias.index'),
         icon: Megaphone,
         requiredPermission: 'ver-convocatorias',
+    },
+    {
+        title: 'Revision Inteligente',
+        href: route('modulo-inteligente.index'),
+        icon: BrainCircuit,
+        // requiredPermission: 'ver-revision-inteligente',
     }
 ];
 
@@ -117,6 +123,25 @@ const NavParamsItems: NavItemWithPermissions[] = [
 //     },
 // ];
 
+// Función helper para determinar si una ruta está activa
+function isRouteActive(currentUrl: string, routeHref: string): boolean {
+    
+    // Extraer solo la ruta de routeHref (remover protocolo, dominio, puerto)
+    const routePath = routeHref.replace(/^https?:\/\/[^/]+/, '');
+    
+    // Si es exactamente la misma ruta
+    if (currentUrl === routePath) {
+        return true;
+    }
+    
+    // Si la ruta actual empieza con la ruta del menú + '/'
+    if (currentUrl.startsWith(routePath + '/')) {
+        return true;
+    }
+    
+    return false;
+}
+
 // Función para filtrar elementos según permisos
 const filterItemsByPermission = (items: NavItemWithPermissions[], hasPermission: (permission: string) => boolean): NavItem[] => {
     return items.filter(item => {
@@ -160,7 +185,7 @@ export function AppSidebar() {
                             <SidebarMenu>
                                 {filteredParamItems.map((item) => (
                                     <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild isActive={page.url.startsWith(item.href)} tooltip={{ children: item.title }}>
+                                        <SidebarMenuButton asChild isActive={isRouteActive(page.url, item.href)} tooltip={{ children: item.title }}>
                                             <Link href={item.href} prefetch>
                                                 {item.icon && <item.icon />}
                                                 <span> {item.title}</span>

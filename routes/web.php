@@ -12,6 +12,7 @@ use App\Http\Controllers\{
     PostulacionController,
     ProductoInvestigativoController,
     ProyectoInvestigativoController,
+    RevisionInteligenteController,
     SubTipoProductoController,
     TipoProductoController,
 };
@@ -49,7 +50,7 @@ Route::get('/', function () {
     ]);
 })->middleware('guest')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth.home', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
@@ -140,6 +141,9 @@ Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/
 
     // Rutas para Elementos de Productos
     Route::resource('productos.elementos', ElementosProductoController::class);
+
+    //Rutas para Modulo Inteligente
+    Route::resource('modulo-inteligente', RevisionInteligenteController::class);
 
     // Rutas para Entregas de Productos
     Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');

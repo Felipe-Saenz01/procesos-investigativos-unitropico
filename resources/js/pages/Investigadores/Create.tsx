@@ -43,6 +43,7 @@ export default function Create({ isAdmin, grupos, grupoLider, tipoContratos, esc
         'grupo_investigacion_id': isAdmin ? '' : grupoLider?.toString() || '',
         'tipo_contrato_id': '',
         'escalafon_profesoral_id': '',
+        'tipo': isAdmin ? 'Lider Grupo' : undefined,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -67,6 +68,22 @@ export default function Create({ isAdmin, grupos, grupoLider, tipoContratos, esc
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {isAdmin && (
+                                    <div>
+                                        <Label htmlFor="tipo">Tipo de Usuario</Label>
+                                        <SearchSelect
+                                            value={(data as any).tipo as string}
+                                            onValueChange={(value) => setData('tipo' as any, String(value))}
+                                            options={[
+                                                { value: 'Lider Grupo', label: 'Líder de Grupo' },
+                                                { value: 'Investigador', label: 'Investigador' },
+                                            ]}
+                                            placeholder="Seleccionar tipo"
+                                            className={errors['tipo' as any] ? 'border-red-500' : ''}
+                                        />
+                                        {errors['tipo' as any] && <p className="text-red-500 text-xs mt-1">{errors['tipo' as any] as unknown as string}</p>}
+                                    </div>
+                                )}
                                 <div>
                                     <Label htmlFor="name">Nombre</Label>
                                     <Input

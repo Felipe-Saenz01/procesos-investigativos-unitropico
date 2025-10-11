@@ -91,17 +91,21 @@ class InvestigadorController extends Controller
         $isAdmin = $user->hasRole('Administrador');
         $isLider = $user->hasRole('Lider Grupo');
 
-        $data = $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'cedula' => 'required|digits_between:6,15|unique:users,cedula',
             'grupo_investigacion_id' => $isAdmin ? 'required|exists:grupo_investigacions,id' : 'nullable',
             'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
             'escalafon_profesoral_id' => 'required|exists:escalafon_profesorals,id',
-        ]);
+        ];
+        if ($isAdmin) {
+            $rules['tipo'] = 'required|in:Lider Grupo,Investigador';
+        }
+        $data = $request->validate($rules);
 
         if ($isAdmin) {
-            $data['tipo'] = 'Lider Grupo';
+            $data['tipo'] = $request->input('tipo', 'Lider Grupo');
             $data['grupo_investigacion_id'] = $request->grupo_investigacion_id;
         } elseif ($isLider) {
             $data['tipo'] = 'Investigador';
@@ -120,6 +124,7 @@ class InvestigadorController extends Controller
 
     public function edit(User $investigador)
     {
+        $isAdmin = Auth::user()->hasRole('Administrador');
         $grupos = GrupoInvestigacion::all(['id', 'nombre']);
         $tipoContratos = TipoContrato::all(['id', 'nombre']);
         $escalafonesProfesoral = EscalafonProfesoral::all(['id', 'nombre']);
@@ -128,20 +133,35 @@ class InvestigadorController extends Controller
             'grupos' => $grupos,
             'tipoContratos' => $tipoContratos,
             'escalafonesProfesoral' => $escalafonesProfesoral,
+            'isAdmin' => $isAdmin,
         ]);
     }
 
     public function update(Request $request, User $investigador)
     {
-        $data = $request->validate([
+        $isAdmin = Auth::user()->hasRole('Administrador');
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $investigador->id,
             'cedula' => 'required|digits_between:6,15|unique:users,cedula,' . $investigador->id,
             'grupo_investigacion_id' => 'nullable|exists:grupo_investigacions,id',
             'tipo_contrato_id' => 'required|exists:tipo_contratos,id',
             'escalafon_profesoral_id' => 'required|exists:escalafon_profesorals,id',
-        ]);
+        ];
+        if ($isAdmin) {
+            $rules['tipo'] = 'required|in:Lider Grupo,Investigador';
+        }
+        $data = $request->validate($rules);
+
+        // Actualizar datos base
         $investigador->update($data);
+
+        // Si es admin y envía el tipo, sincronizar roles (elimina todos y asigna el del formulario)
+        if ($isAdmin && array_key_exists('tipo', $data)) {
+            $investigador->tipo = $data['tipo'];
+            $investigador->save();
+            $investigador->syncRoles([$data['tipo']]);
+        }
         return to_route('investigadores.index')->with('success', 'Investigador actualizado correctamente');
     }
 

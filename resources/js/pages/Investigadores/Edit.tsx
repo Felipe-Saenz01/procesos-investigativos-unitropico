@@ -36,6 +36,7 @@ interface Props {
     grupos: GrupoInvestigacion[];
     tipoContratos: TipoContrato[];
     escalafonesProfesoral: EscalafonProfesoral[];
+    isAdmin?: boolean;
 }
 
 const breadcrumbs = [
@@ -43,7 +44,7 @@ const breadcrumbs = [
     { title: 'Editar Investigador', href: '#' },
 ];
 
-export default function Edit({ investigador, grupos, tipoContratos, escalafonesProfesoral }: Props) {
+export default function Edit({ investigador, grupos, tipoContratos, escalafonesProfesoral, isAdmin = false }: Props) {
     const { data, setData, put, processing, errors, reset } = useForm({
         name: investigador.name,
         email: investigador.email,
@@ -51,6 +52,7 @@ export default function Edit({ investigador, grupos, tipoContratos, escalafonesP
         'grupo_investigacion_id': investigador.grupo_investigacion_id?.toString() || '',
         'tipo_contrato_id': investigador.tipo_contrato_id?.toString() || '',
         'escalafon_profesoral_id': investigador.escalafon_profesoral_id?.toString() || '',
+        'tipo': investigador.tipo,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -73,6 +75,22 @@ export default function Edit({ investigador, grupos, tipoContratos, escalafonesP
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {isAdmin && (
+                                    <div>
+                                        <Label htmlFor="tipo">Tipo de Usuario</Label>
+                                        <SearchSelect
+                                            value={(data as any).tipo as string}
+                                            onValueChange={(value) => setData('tipo' as any, String(value))}
+                                            options={[
+                                                { value: 'Lider Grupo', label: 'Líder de Grupo' },
+                                                { value: 'Investigador', label: 'Investigador' },
+                                            ]}
+                                            placeholder="Seleccionar tipo"
+                                            className={errors['tipo' as any] ? 'border-red-500' : ''}
+                                        />
+                                        {errors['tipo' as any] && <p className="text-red-500 text-xs mt-1">{errors['tipo' as any] as unknown as string}</p>}
+                                    </div>
+                                )}
                                 <div>
                                     <Label htmlFor="name">Nombre</Label>
                                     <Input

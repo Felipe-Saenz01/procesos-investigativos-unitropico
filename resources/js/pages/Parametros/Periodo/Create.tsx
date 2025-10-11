@@ -4,13 +4,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/form-date-picker';
+import { DatePicker, createLocalDate, formatDateToString } from '@/components/form-date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
 import { FormEvent } from 'react';
-import { format } from 'date-fns';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -79,8 +78,8 @@ export default function Create() {
                                 </div>
                                 
                                 <DatePicker
-                                    value={data.fecha_limite_planeacion ? new Date(data.fecha_limite_planeacion) : undefined}
-                                    onValueChange={(date) => setData('fecha_limite_planeacion', date ? format(date, 'yyyy-MM-dd') : '')}
+                                    value={data.fecha_limite_planeacion ? createLocalDate(data.fecha_limite_planeacion) : undefined}
+                                    onValueChange={(date) => setData('fecha_limite_planeacion', date ? formatDateToString(date) : '')}
                                     label="Fecha Límite de Planeación"
                                     name="fecha_limite_planeacion"
                                     placeholder="Seleccionar fecha de planeación..."
@@ -88,12 +87,12 @@ export default function Create() {
                                 />
 
                                 <DatePicker
-                                    value={data.fecha_limite_evidencias ? new Date(data.fecha_limite_evidencias) : undefined}
-                                    onValueChange={(date) => setData('fecha_limite_evidencias', date ? format(date, 'yyyy-MM-dd') : '')}
+                                    value={data.fecha_limite_evidencias ? createLocalDate(data.fecha_limite_evidencias) : undefined}
+                                    onValueChange={(date) => setData('fecha_limite_evidencias', date ? formatDateToString(date) : '')}
                                     label="Fecha Límite de Evidencias"
                                     name="fecha_limite_evidencias"
                                     placeholder="Seleccionar fecha de evidencias..."
-                                    minDate={data.fecha_limite_planeacion ? new Date(data.fecha_limite_planeacion) : undefined}
+                                    minDate={data.fecha_limite_planeacion ? createLocalDate(data.fecha_limite_planeacion) : undefined}
                                     required
                                 />
 

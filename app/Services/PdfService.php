@@ -51,8 +51,13 @@ class PdfService
      */
     public function generatePlanTrabajoPdf(PlanTrabajo $plan)
     {
-        // Cargar las relaciones necesarias
-        $plan->load(['user', 'actividades.actividadInvestigacion']);
+        // Cargar las relaciones necesarias, incluyendo informes y sus evidencias
+        $plan->load([
+            'user',
+            'actividades.actividadInvestigacion',
+            'informes.periodo',
+            'informes.evidencias.actividadPlan.actividadInvestigacion',
+        ]);
         
         $html = view('pdfs.plan-trabajo', compact('plan'))->render();
         

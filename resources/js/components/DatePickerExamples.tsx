@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DatePicker } from './form-date-picker';
+import { DatePicker, createLocalDate, formatDateToString } from './form-date-picker';
 import { useForm } from '@inertiajs/react';
 import { format } from 'date-fns';
 
@@ -22,7 +22,7 @@ export function BasicDatePickerExample() {
   );
 }
 
-// Ejemplo 2: Con formulario Inertia.js
+// Ejemplo 2: Con formulario Inertia.js (CORREGIDO - Sin problemas de zona horaria)
 export function InertiaFormDatePickerExample() {
   const { data, setData } = useForm({
     fecha_inicio: '',
@@ -33,8 +33,8 @@ export function InertiaFormDatePickerExample() {
   return (
     <div className="space-y-4">
       <DatePicker
-        value={data.fecha_inicio ? new Date(data.fecha_inicio) : undefined}
-        onValueChange={(date) => setData('fecha_inicio', date ? format(date, 'yyyy-MM-dd') : '')}
+        value={data.fecha_inicio ? createLocalDate(data.fecha_inicio) : undefined}
+        onValueChange={(date) => setData('fecha_inicio', date ? formatDateToString(date) : '')}
         label="Fecha de Inicio"
         name="fecha_inicio"
         placeholder="Seleccionar fecha de inicio..."
@@ -42,18 +42,18 @@ export function InertiaFormDatePickerExample() {
       />
 
       <DatePicker
-        value={data.fecha_fin ? new Date(data.fecha_fin) : undefined}
-        onValueChange={(date) => setData('fecha_fin', date ? format(date, 'yyyy-MM-dd') : '')}
+        value={data.fecha_fin ? createLocalDate(data.fecha_fin) : undefined}
+        onValueChange={(date) => setData('fecha_fin', date ? formatDateToString(date) : '')}
         label="Fecha de Fin"
         name="fecha_fin"
         placeholder="Seleccionar fecha de fin..."
-        minDate={data.fecha_inicio ? new Date(data.fecha_inicio) : undefined}
+        minDate={data.fecha_inicio ? createLocalDate(data.fecha_inicio) : undefined}
         required
       />
 
       <DatePicker
-        value={data.fecha_limite ? new Date(data.fecha_limite) : undefined}
-        onValueChange={(date) => setData('fecha_limite', date ? format(date, 'yyyy-MM-dd') : '')}
+        value={data.fecha_limite ? createLocalDate(data.fecha_limite) : undefined}
+        onValueChange={(date) => setData('fecha_limite', date ? formatDateToString(date) : '')}
         label="Fecha Límite"
         name="fecha_limite"
         placeholder="Seleccionar fecha límite..."

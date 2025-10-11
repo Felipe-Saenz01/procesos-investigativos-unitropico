@@ -98,13 +98,28 @@
                     <td class="text-cell">{{ $evidencia->descripcion }}</td>
                     <td class="center-text">
                         @if($evidencia->ruta_archivo && $evidencia->url_link)
-                            Se entregó un archivo y enlace
+                            <div style="line-height: 1.2;">
+                                <div style="margin-bottom: 2px;">
+                                    <a href="{{ route('investigadores.planes-trabajo.informes.evidencias.descargar', [$investigador->id, $planTrabajo->id, $informe->id, $evidencia->id]) }}" style="color: #0066cc; text-decoration: underline;">
+                                        Archivo adjunto
+                                    </a>
+                                </div>
+                                <div>
+                                    <a href="{{ $evidencia->url_link }}" style="color: #0066cc; text-decoration: underline;" target="_blank">
+                                        Enlace externo
+                                    </a>
+                                </div>
+                            </div>
                         @elseif($evidencia->ruta_archivo)
-                            Se entregó un archivo
+                            <a href="{{ route('investigadores.planes-trabajo.informes.evidencias.descargar', [$investigador->id, $planTrabajo->id, $informe->id, $evidencia->id]) }}" style="color: #0066cc; text-decoration: underline; ">
+                                Archivo adjunto
+                            </a>
                         @elseif($evidencia->url_link)
-                            Se entregó un enlace
+                            <a href="{{ $evidencia->url_link }}" style="color: #0066cc; text-decoration: underline;" target="_blank">
+                                Enlace externo
+                            </a>
                         @else
-                            Sin evidencias
+                            <span style="font-size: 10px; color: #666;">Sin evidencias</span>
                         @endif
                     </td>
                 </tr>

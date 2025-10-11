@@ -225,7 +225,8 @@ class InformePlanTrabajoController extends Controller
             'fechaGeneracion' => now()->format('d/m/Y H:i'),
         ];
 
-        $pdf = $pdfService->generateFromView('pdfs.informe-plan-trabajo', $data, 'A4', 'portrait');
+        // Unificar para usar la vista de preview (mejor soporte de SVG y estilos)
+        $pdf = $pdfService->generateFromView('pdfs.informe-plan-trabajo-preview', $data, 'A4', 'portrait');
         $nombreArchivo = "Informe_{$planTrabajo->nombre}_{$informe->created_at->format('Y-m-d')}.pdf";
         // Mantengo descarga directa en este endpoint
         return $pdf->download($nombreArchivo);

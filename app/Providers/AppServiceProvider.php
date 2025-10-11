@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Configurar la URL de login por defecto
+        config(['auth.defaults.login_url' => '/']);
     }
 }

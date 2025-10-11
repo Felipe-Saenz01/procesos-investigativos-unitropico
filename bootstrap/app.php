@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'guest' => RedirectIfAuthenticated::class,
+            'auth.home' => \App\Http\Middleware\RedirectToHomeOnAuthFailure::class,
         ]);
 
         $middleware->web(append: [

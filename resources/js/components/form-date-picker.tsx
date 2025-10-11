@@ -1,6 +1,6 @@
 import * as React from "react"
 import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,28 @@ interface DatePickerProps {
 }
 
 /**
+ * Función helper para crear una fecha sin problemas de zona horaria
+ * @param dateString - String de fecha en formato YYYY-MM-DD
+ * @returns Date object sin problemas de zona horaria
+ */
+function createLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Función helper para convertir Date a string sin problemas de zona horaria
+ * @param date - Date object
+ * @returns String en formato YYYY-MM-DD
+ */
+function formatDateToString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Componente DatePicker - Selector de fecha reutilizable
  * 
  * @example
@@ -39,8 +61,8 @@ interface DatePickerProps {
  * @example
  * // Con formulario Inertia
  * <DatePicker
- *   value={data.fecha_limite ? new Date(data.fecha_limite) : undefined}
- *   onValueChange={(date) => setData('fecha_limite', date ? format(date, 'yyyy-MM-dd') : '')}
+ *   value={data.fecha_limite ? createLocalDate(data.fecha_limite) : undefined}
+ *   onValueChange={(date) => setData('fecha_limite', date ? formatDateToString(date) : '')}
  *   name="fecha_limite"
  *   placeholder="Seleccionar fecha límite..."
  * />
@@ -48,8 +70,8 @@ interface DatePickerProps {
  * @example
  * // Para registro histórico (permite fechas pasadas)
  * <DatePicker
- *   value={data.fecha_entrega_real ? new Date(data.fecha_entrega_real) : undefined}
- *   onValueChange={(date) => setData('fecha_entrega_real', date ? format(date, 'yyyy-MM-dd') : '')}
+ *   value={data.fecha_entrega_real ? createLocalDate(data.fecha_entrega_real) : undefined}
+ *   onValueChange={(date) => setData('fecha_entrega_real', date ? formatDateToString(date) : '')}
  *   name="fecha_entrega_real"
  *   placeholder="Seleccionar fecha de entrega real..."
  * />
@@ -117,23 +139,33 @@ export function DatePicker({
         <input
           type="hidden"
           name={name}
-          value={value ? format(value, 'yyyy-MM-dd') : ''}
+          value={value ? formatDateToString(value) : ''}
         />
       )}
     </div>
   )
 }
 
+// Exportar las funciones helper para uso externo
+export { createLocalDate, formatDateToString }
+
 // Componente legacy para mantener compatibilidad
 export function CalendarDemo() {
   const [date, setDate] = React.useState<Date | undefined>(undefined)
 
   return (
-    <DatePicker
-      value={date}
-      onValueChange={setDate}
-      placeholder="Seleccionar fecha..."
-      label="Fecha de nacimiento"
-    />
+    <div className="flex flex-col gap-2">
+      <DatePicker
+        value={date}
+        onValueChange={setDate}
+        placeholder="Seleccionar fecha..."
+        label="Fecha de ejemplo"
+      />
+      {date && (
+        <p className="text-sm text-muted-foreground">
+          Fecha seleccionada: {format(date, "PPP", { locale: es })}
+        </p>
+      )}
+    </div>
   )
 }
