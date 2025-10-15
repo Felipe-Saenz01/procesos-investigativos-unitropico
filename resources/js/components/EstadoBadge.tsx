@@ -50,6 +50,12 @@ export function EstadoBadge({ estado, size = 'default', showIcon = true }: Estad
             text: 'Rechazado',
             color: 'bg-red-600'
         },
+        'Terminado': { 
+            variant: 'default' as const, 
+            icon: SquareCheck, 
+            text: 'Terminado',
+            color: 'bg-purple-600'
+        },
         
         // Estados de proyectos
         'En Formulación': { 
@@ -62,7 +68,7 @@ export function EstadoBadge({ estado, size = 'default', showIcon = true }: Estad
             variant: 'default' as const, 
             icon: CheckCircle, 
             text: 'Formulado',
-            color: 'text-green-600'
+            color: 'bg-green-600'
         },
         'En Ejecución': { 
             variant: 'default' as const, 
@@ -88,7 +94,7 @@ export function EstadoBadge({ estado, size = 'default', showIcon = true }: Estad
             variant: 'default' as const, 
             icon: CheckCircle, 
             text: 'Activo',
-            color: 'text-green-600'
+            color: 'bg-green-600'
         },
         'Inactivo': { 
             variant: 'secondary' as const, 

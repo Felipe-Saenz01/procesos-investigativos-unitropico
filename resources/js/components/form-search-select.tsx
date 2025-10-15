@@ -31,6 +31,7 @@ interface SearchSelectProps {
   name?: string;
   disabled?: boolean;
   className?: string;
+  side?: 'top' | 'bottom';
 }
 
 /**
@@ -58,6 +59,26 @@ interface SearchSelectProps {
  *   placeholder="Seleccionar usuario..."
  *   searchPlaceholder="Buscar usuario..."
  * />
+ * 
+ * @example
+ * // Con orientación hacia arriba (útil para elementos al final del formulario)
+ * <SearchSelect
+ *   options={elementOptions}
+ *   value={data.elemento_id}
+ *   onValueChange={(value) => setData('elemento_id', String(value))}
+ *   placeholder="Seleccionar elemento..."
+ *   side="top"
+ * />
+ * 
+ * @example
+ * // Orientación hacia abajo (comportamiento por defecto)
+ * <SearchSelect
+ *   options={userOptions}
+ *   value={data.user_id}
+ *   onValueChange={(value) => setData('user_id', String(value))}
+ *   placeholder="Seleccionar usuario..."
+ *   side="bottom" // Opcional, es el valor por defecto
+ * />
  */
 export function SearchSelect({
   options,
@@ -68,7 +89,8 @@ export function SearchSelect({
   emptyMessage = "No se encontraron resultados.",
   name,
   disabled = false,
-  className
+  className,
+  side = 'bottom'
 }: SearchSelectProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -95,7 +117,7 @@ export function SearchSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+      <PopoverContent className="w-full p-0" align="start" side={side} sideOffset={4} avoidCollisions={false}>
         <Command>
           <CommandInput placeholder={searchPlaceholder} className="h-9" />
           <CommandList>

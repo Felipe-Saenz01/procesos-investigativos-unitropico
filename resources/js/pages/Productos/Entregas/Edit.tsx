@@ -55,7 +55,7 @@ interface Entrega {
         porcentaje: number;
     }>;
     periodo: Periodo;
-    productoInvestigativo: ProductoInvestigativo;
+    producto_investigativo: ProductoInvestigativo;
 }
 
 interface EntregasEditProps {
@@ -94,13 +94,13 @@ export default function EntregasEdit({ entrega }: EntregasEditProps) {
         setData('planeacion', newPlaneacion);
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    };
+    // const formatDate = (dateString: string) => {
+    //     return new Date(dateString).toLocaleDateString('es-ES', {
+    //         year: 'numeric',
+    //         month: 'long',
+    //         day: 'numeric'
+    //     });
+    // };
 
     const getTipoLabel = (tipo: string) => {
         return tipo === 'planeacion' ? 'Planeación' : 'Evidencia';
@@ -119,7 +119,7 @@ export default function EntregasEdit({ entrega }: EntregasEditProps) {
                                     Editar Entrega
                                 </CardTitle>
                                 <Button variant="outline" size="sm" asChild>
-                                    <Link href={route('productos.show', entrega.productoInvestigativo.id)}>
+                                    <Link href={route('productos.show', entrega.producto_investigativo.id)}>
                                         <ArrowLeft className="h-4 w-4 mr-2" />
                                         Volver al Producto
                                     </Link>
@@ -160,12 +160,12 @@ export default function EntregasEdit({ entrega }: EntregasEditProps) {
                                             <span className="text-sm font-medium text-gray-500">Período:</span>
                                             <p className="font-medium">{entrega.periodo.nombre}</p>
                                             <p className="text-sm text-gray-500">
-                                                {formatDate(entrega.periodo.fecha_inicio)} - {formatDate(entrega.periodo.fecha_fin)}
+                                                {new Date(entrega.periodo.fecha_inicio).toLocaleDateString()} - {new Date(entrega.periodo.fecha_fin).toLocaleDateString()}
                                             </p>
                                         </div>
                                         <div>
                                             <span className="text-sm font-medium text-gray-500">Producto:</span>
-                                            <p className="font-medium">{entrega.productoInvestigativo.titulo}</p>
+                                            <p className="font-medium">{entrega.producto_investigativo.titulo}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -240,7 +240,7 @@ export default function EntregasEdit({ entrega }: EntregasEditProps) {
                         </CardContent>
                         <CardFooter className='flex justify-end'>
                             <Button type='button' variant="destructive" className='mr-3'>
-                                <Link href={route('productos.show', entrega.productoInvestigativo.id)}>Cancelar</Link>
+                                <Link href={route('productos.show', entrega.producto_investigativo.id)}>Cancelar</Link>
                             </Button>
                             <Button type='submit' disabled={processing} className='bg-primary hover:bg-primary/90'>
                                 {processing ? 'Guardando...' : (

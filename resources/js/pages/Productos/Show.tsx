@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Edit, FileText, Users, ArrowLeft, Plus, Eye, Trash2 } from 'lucide-react';
+import { Edit, FileText, Users, ArrowLeft, Plus, Eye, Trash2, CheckCircle } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
@@ -51,7 +51,7 @@ interface ElementoProducto {
     id: number;
     nombre: string;
     descripcion: string;
-    estado: string;
+    progreso: number;
     created_at: string;
     updated_at: string;
 }
@@ -75,6 +75,8 @@ interface PeriodoEntrega {
     fecha_limite_planeacion: string;
     fecha_limite_evidencias: string;
     estado: string;
+    puede_crear_planeacion: boolean;
+    puede_crear_evidencia: boolean;
     planeacion: null | {
         id: number;
         estado: string;
@@ -128,6 +130,17 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>
                             {flash.error}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
+                {/* Mostrar mensajes de éxito */}
+                {flash.success && (
+                    <Alert className="border-green-200 bg-green-50 text-green-800">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertTitle>Éxito</AlertTitle>
+                        <AlertDescription>
+                            {flash.success}
                         </AlertDescription>
                     </Alert>
                 )}
@@ -283,8 +296,8 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                         <div key={elemento.id} className="p-4 border rounded-lg">
                                             <div className="flex items-start justify-between mb-2">
                                                 <h4 className="font-medium">{elemento.nombre}</h4>
-                                                <Badge variant={elemento.estado === 'Completado' ? 'default' : 'secondary'}>
-                                                    {elemento.estado}
+                                                <Badge variant='default'>
+                                                    {elemento.progreso}%
                                                 </Badge>
                                             </div>
                                             <p className="text-sm text-gray-600 mb-3">{elemento.descripcion}</p>
@@ -331,28 +344,62 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                     <AccordionItem key={periodo.id} value={String(periodo.id)} className="bg-gray-100 rounded-lg p-3">
                                         <AccordionTrigger>
                                             <div className="flex flex-col gap-1">
-                                                <span className="font-medium">{periodo.nombre}</span>
-                                                <span className="font-medium text-gray-500">Planeación hasta: {formatDate(periodo.fecha_limite_planeacion)} | Evidencias hasta: {formatDate(periodo.fecha_limite_evidencias)}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-medium">{periodo.nombre}</span>
+                                                    <Badge variant={periodo.estado === 'Activo' ? 'default' : 'secondary'}>
+                                                        {periodo.estado}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex flex-col gap-1 text-sm text-gray-500">
+                                                    <span>Planeación hasta: {new Date(periodo.fecha_limite_planeacion).toLocaleDateString()}</span>
+                                                    <span>Evidencias hasta: {new Date(periodo.fecha_limite_evidencias).toLocaleDateString()}</span>
+                                                </div>
+                                                <div className="flex gap-2 mt-1">
+                                                    {periodo.planeacion && (
+                                                        <Badge variant="outline" className="text-green-600 border-green-600">
+                                                            ✓ Planeación
+                                                        </Badge>
+                                                    )}
+                                                    {periodo.evidencia && (
+                                                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                                                            ✓ Evidencia
+                                                        </Badge>
+                                                    )}
+                                                    {periodo.puede_crear_planeacion && (
+                                                        <Badge variant="outline" className="text-orange-600 border-orange-600">
+                                                            Pendiente Planeación
+                                                        </Badge>
+                                                    )}
+                                                    {periodo.puede_crear_evidencia && (
+                                                        <Badge variant="outline" className="text-purple-600 border-purple-600">
+                                                            Pendiente Evidencia
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent>
                                             {/* Botones de acción */}
                                             <div className="flex gap-2 mb-4">
-                                                {!periodo.planeacion && periodo.estado === 'Activo' && (
+                                                {periodo.puede_crear_planeacion && (
                                                     <Button asChild size="sm" variant="default">
                                                         <Link href={route('entregas.planeacion.create', producto.id) + `?periodo_id=${periodo.id}`}>
                                                             <Plus className="h-4 w-4 mr-2" />Registrar Planeación
                                                         </Link>
                                                     </Button>
                                                 )}
-                                                {periodo.planeacion && periodo.planeacion.estado === 'aprobada' && !periodo.evidencia && periodo.estado === 'Activo' &&
-                                                    new Date() <= new Date(periodo.fecha_limite_evidencias) && (
+                                                {periodo.puede_crear_evidencia && (
                                                     <Button asChild size="sm" variant="secondary">
                                                         <Link href={route('entregas.evidencia.create', producto.id) + `?periodo_id=${periodo.id}`}>
                                                             <Plus className="h-4 w-4 mr-2" />Registrar Evidencia
                                                         </Link>
                                                     </Button>
                                                 )}
+                                                <Button asChild size="sm" variant="outline">
+                                                    <Link href={route('periodos.detalle', [producto.id, periodo.id])}>
+                                                        <Eye className="h-4 w-4 mr-2" />Ver Detalle
+                                                    </Link>
+                                                </Button>
                                             </div>
                                             {/* Tabla de entregas */}
                                             <Table>
@@ -398,7 +445,12 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                                     )}
                                                     {!periodo.planeacion && !periodo.evidencia && (
                                                         <TableRow>
-                                                            <TableCell colSpan={5} className="text-center text-gray-500">No hay entregas para este período</TableCell>
+                                                            <TableCell colSpan={5} className="text-center text-gray-500 py-4">
+                                                                {periodo.puede_crear_planeacion ? 
+                                                                    'Período activo - Puede crear planeación' : 
+                                                                    'No hay entregas para este período'
+                                                                }
+                                                            </TableCell>
                                                         </TableRow>
                                                     )}
                                                 </TableBody>

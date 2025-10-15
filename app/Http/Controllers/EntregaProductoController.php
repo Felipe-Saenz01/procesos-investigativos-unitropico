@@ -10,6 +10,7 @@ use App\Models\ProductoInvestigativo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class EntregaProductoController extends Controller
@@ -47,8 +48,6 @@ class EntregaProductoController extends Controller
             return [
                 'id' => $periodo->id,
                 'nombre' => $periodo->nombre,
-                'fecha_inicio' => $periodo->fecha_inicio,
-                'fecha_fin' => $periodo->fecha_fin,
                 'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
                 'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
                 'estado' => $periodo->estado,
@@ -219,7 +218,7 @@ class EntregaProductoController extends Controller
         }
 
         // Verificar que el período no haya finalizado
-        if (now()->isAfter($entregaProducto->periodo->fecha_fin)) {
+        if (now()->isAfter($entregaProducto->periodo->fecha_limite_evidencias)) {
             return back()->with('error', 'No se puede editar una entrega de un período finalizado.');
         }
 
@@ -239,7 +238,7 @@ class EntregaProductoController extends Controller
         }
 
         // Verificar que el período no haya finalizado
-        if (now()->isAfter($entregaProducto->periodo->fecha_fin)) {
+        if (now()->isAfter($entregaProducto->periodo->fecha_limite_evidencias)) {
             return back()->withErrors(['general' => 'No se puede editar una entrega de un período finalizado.']);
         }
 
@@ -282,7 +281,7 @@ class EntregaProductoController extends Controller
         }
 
         // Verificar que el período no haya finalizado
-        if (now()->isAfter($entregaProducto->periodo->fecha_fin)) {
+        if (now()->isAfter($entregaProducto->periodo->fecha_limite_evidencias)) {
             return back()->with('error', 'No se puede eliminar una entrega de un período finalizado.');
         }
 
@@ -332,7 +331,7 @@ class EntregaProductoController extends Controller
                 'id' => $periodo->id,
                 'nombre' => $periodo->nombre,
                 'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
-                'fecha_limite_evidencia' => $periodo->fecha_limite_evidencia,
+                'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
                 'estado' => $periodo->estado,
                 'horas_disponibles' => $horasDisponibles,
             ];
@@ -454,8 +453,8 @@ class EntregaProductoController extends Controller
         $periodoConHoras = [
             'id' => $periodo->id,
             'nombre' => $periodo->nombre,
-            'fecha_inicio' => $periodo->fecha_inicio,
-            'fecha_fin' => $periodo->fecha_fin,
+            'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
+            'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
             'estado' => $periodo->estado,
             'horas_disponibles' => $planeacion->horas_planeacion, // Usar las horas de planeación
         ];
@@ -486,6 +485,7 @@ class EntregaProductoController extends Controller
             'porcentaje_completado' => 'required|array|min:1',
             'porcentaje_completado.*' => 'required|numeric|min:0|max:100',
             'progreso_evidencia' => 'required|integer|min:0|max:100',
+            'evidencia' => 'required|file|mimes:pdf,doc,docx,txt,jpg,jpeg,png,zip,rar|max:10240', // 10MB máximo
         ], [
             'porcentaje_completado.required' => 'Los porcentajes de avance son requeridos.',
             'porcentaje_completado.array' => 'Los porcentajes deben ser una lista.',
@@ -498,6 +498,10 @@ class EntregaProductoController extends Controller
             'progreso_evidencia.integer' => 'El progreso debe ser un número entero.',
             'progreso_evidencia.min' => 'El progreso no puede ser menor a 0.',
             'progreso_evidencia.max' => 'El progreso no puede ser mayor a 100.',
+            'evidencia.required' => 'El archivo de evidencia es obligatorio.',
+            'evidencia.file' => 'Debe subir un archivo válido.',
+            'evidencia.mimes' => 'El archivo debe ser de tipo: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG, ZIP, RAR.',
+            'evidencia.max' => 'El archivo no puede ser mayor a 10MB.',
         ]);
 
         // Buscar la planeación existente más reciente
@@ -522,6 +526,14 @@ class EntregaProductoController extends Controller
             }
         }
 
+        // Guardar el archivo de evidencia
+        $rutaArchivo = null;
+        if ($request->hasFile('evidencia')) {
+            $archivo = $request->file('evidencia');
+            $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
+            $rutaArchivo = $archivo->storeAs('evidencias', $nombreArchivo, 'public');
+        }
+
         // Crear la entrega de evidencia
         $entrega = EntregaProducto::create([
             'tipo' => 'evidencia',
@@ -529,13 +541,35 @@ class EntregaProductoController extends Controller
             'periodo_id' => $periodo->id,
             'user_id' => Auth::id(),
             'producto_investigativo_id' => $producto->id,
-            'evidencia' => null,
-            'progreso_planeacion' => $planeacion->progreso_planeacion,
-            'progreso_evidencia' => $request->progreso_evidencia,
+            'evidencia' => $rutaArchivo,
+            'progreso_planeacion' => $request->progreso_evidencia, // Usar el mismo campo para evidencia
             'horas_planeacion' => $planeacion->horas_planeacion,
-            'horas_evidencia' => $request->horas_evidencia ?? 0,
             'estado' => 'pendiente', // Establecer estado por defecto
         ]);
+
+        // Si hay archivo, moverlo a la carpeta organizada por cédula del usuario e ID de entrega
+        if ($rutaArchivo && $request->hasFile('evidencia')) {
+            $archivo = $request->file('evidencia');
+            $extension = $archivo->getClientOriginalExtension();
+            
+            // Obtener la cédula del usuario autenticado
+            $usuario = Auth::user();
+            $cedula = $usuario->cedula ?? 'sin_cedula';
+            
+            // Crear nombre de archivo con formato: evidencia_id_fecha
+            $fecha = now()->format('Y-m-d');
+            $nombreArchivo = "evidencia_{$entrega->id}_{$fecha}.{$extension}";
+            
+            // Crear carpeta con formato: cedula_id_entrega
+            $carpeta = "evidencias/{$cedula}_{$entrega->id}";
+            $nuevaRuta = $archivo->storeAs($carpeta, $nombreArchivo, 'public');
+            
+            // Actualizar la ruta en la base de datos
+            $entrega->update(['evidencia' => $nuevaRuta]);
+            
+            // Eliminar el archivo temporal
+            Storage::disk('public')->delete($rutaArchivo);
+        }
 
         // Actualizar el progreso de los elementos del producto
         $this->actualizarProgresoElementos($producto->id, $planeacion->planeacion, $request->porcentaje_completado);
@@ -586,7 +620,8 @@ class EntregaProductoController extends Controller
         }
 
         // Calcular el progreso promedio de todas las evidencias
-        $progresoTotal = $entregasEvidencia->sum('progreso_evidencia');
+        // Usando progreso_planeacion ya que es el campo que almacena el progreso de evidencia
+        $progresoTotal = $entregasEvidencia->sum('progreso_planeacion');
         $progresoPromedio = round($progresoTotal / $entregasEvidencia->count());
 
         // Actualizar el progreso del producto
@@ -651,5 +686,59 @@ class EntregaProductoController extends Controller
                 'estado' => 'Formulado'
             ]);
         }
+    }
+
+    /**
+     * Mostrar detalles de un período específico para un producto
+     */
+    public function detallePeriodo(ProductoInvestigativo $producto, \App\Models\Periodo $periodo)
+    {
+        // Verificar que el usuario tenga acceso al producto
+        if (!$producto->usuarios->contains(Auth::id())) {
+            abort(403, 'No tienes permisos para ver este producto.');
+        }
+
+        // Obtener todas las entregas del período para este producto
+        $entregas = $producto->entregas()
+            ->where('periodo_id', $periodo->id)
+            ->with(['usuario', 'periodo'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Separar entregas por tipo
+        $planeacion = $entregas->where('tipo', 'planeacion')->first();
+        $evidencia = $entregas->where('tipo', 'evidencia')->first();
+
+        // Calcular estadísticas
+        $estadisticas = [
+            'total_entregas' => $entregas->count(),
+            'tiene_planeacion' => $planeacion ? true : false,
+            'tiene_evidencia' => $evidencia ? true : false,
+            'progreso_planeacion' => $planeacion ? $planeacion->progreso_planeacion : 0,
+            'progreso_evidencia' => $evidencia ? $evidencia->progreso_planeacion : 0, // Usando el mismo campo
+            'horas_planeacion' => $planeacion ? $planeacion->horas_planeacion : 0,
+            'fecha_planeacion' => $planeacion ? $planeacion->created_at : null,
+            'fecha_evidencia' => $evidencia ? $evidencia->created_at : null,
+        ];
+
+        // Calcular diferencias entre planeación y evidencia
+        $comparacion = null;
+        if ($planeacion && $evidencia) {
+            $comparacion = [
+                'diferencia_progreso' => $evidencia->progreso_planeacion - $planeacion->progreso_planeacion,
+                'cumplimiento_planeacion' => $evidencia->progreso_planeacion >= $planeacion->progreso_planeacion,
+                'elementos_planeacion' => $planeacion->planeacion ?? [],
+                'elementos_evidencia' => $evidencia->planeacion ?? [],
+            ];
+        }
+
+        return Inertia::render('Periodos/Detalle', [
+            'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios']),
+            'periodo' => $periodo,
+            'planeacion' => $planeacion,
+            'evidencia' => $evidencia,
+            'estadisticas' => $estadisticas,
+            'comparacion' => $comparacion,
+        ]);
     }
 }

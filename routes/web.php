@@ -111,6 +111,7 @@ Route::middleware(['auth.home', 'verified'])->group(function () {
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/edit', [InvestigadorController::class, 'editPlanTrabajo'])->name('investigadores.planes-trabajo.edit');
     Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}', [InvestigadorController::class, 'updatePlanTrabajo'])->name('investigadores.planes-trabajo.update');
     Route::delete('investigadores/{investigador}/planes-trabajo/{planTrabajo}', [InvestigadorController::class, 'destroyPlanTrabajo'])->name('investigadores.planes-trabajo.destroy');
+    Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/terminar', [InvestigadorController::class, 'terminarPlanTrabajo'])->name('investigadores.planes-trabajo.terminar');
     Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/aprobar', [InvestigadorController::class, 'aprobarPlanTrabajo'])->name('investigadores.planes-trabajo.aprobar');
     Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/rechazar', [InvestigadorController::class, 'rechazarPlanTrabajo'])->name('investigadores.planes-trabajo.rechazar');
     Route::put('investigadores/{investigador}/planes-trabajo/{planTrabajo}/enviar-revision', [InvestigadorController::class, 'enviarParaRevision'])->name('investigadores.planes-trabajo.enviar-revision');
@@ -154,6 +155,9 @@ Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/
     Route::get('entregas/{entregaProducto}/edit', [EntregaProductoController::class, 'edit'])->name('entregas.edit');
     Route::put('entregas/{entregaProducto}', [EntregaProductoController::class, 'update'])->name('entregas.update');
     Route::delete('entregas/{entregaProducto}', [EntregaProductoController::class, 'destroy'])->name('entregas.destroy');
+    
+    // Ruta para detalle del período
+    Route::get('productos/{producto}/periodos/{periodo}', [EntregaProductoController::class, 'detallePeriodo'])->name('periodos.detalle');
 });
 
 // Ruta para realizar revisión del plan de trabajo

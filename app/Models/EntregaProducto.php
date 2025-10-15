@@ -19,7 +19,6 @@ class EntregaProducto extends Model
         'user_id',
         'producto_investigativo_id',
         'progreso_planeacion',
-        'progreso_evidencia',
         'horas_planeacion',
         'estado',
     ];

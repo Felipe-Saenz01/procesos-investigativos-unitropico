@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -39,6 +38,7 @@ interface Periodo {
 interface Usuario {
     id: number;
     name: string;
+    tipo: string;
 }
 
 interface ProductoInvestigativo {
@@ -55,12 +55,14 @@ interface Entrega {
         nombre: string;
         porcentaje: number;
     }>;
+    evidencia: string | null;
     created_at: string;
     updated_at: string;
     periodo: Periodo;
     usuario: Usuario;
     producto_investigativo: ProductoInvestigativo;
     horas_planeacion: number;
+    progreso_planeacion: number;
     estado: string;
 }
 
@@ -89,7 +91,7 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Entrega: ${getTipoLabel(entrega.tipo)}`} />
+            <Head title={`Entrega ${getTipoLabel(entrega.tipo)}`} />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header con botones de acción */}
                 <div className="flex items-center justify-between">
@@ -120,24 +122,65 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                     Detalles de la Entrega
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className=" flex space-x-2 items-center ">
-                                <div >
-                                    <Badge variant={entrega.tipo === 'planeacion' ? 'default' : 'secondary'} className="text-sm">
-                                        {getTipoLabel(entrega.tipo)}
-                                    </Badge>
-                                </div>
-                                <Separator orientation="vertical"/>
-                                <div className="grid grid-cols-2 gap-4 text-sm h-full w-full">
-                                    <div>
-                                        <p className="flex items-center gap-1 mt-1">
-                                            <span className=" text-gray-500">Fecha de entrega:</span>
-                                            <Calendar className="h-3 w-3" />
-                                            {formatDate(entrega.created_at)}
-                                        </p>
-                                        <p className="flex items-center gap-1 mt-1">
-                                            <span className=" text-gray-500">Estado:</span>
-                                            <Badge variant={entrega.estado === 'aprobada' ? 'default' : 'secondary'}>{entrega.estado}</Badge>
-                                        </p>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Información básica */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={entrega.tipo === 'planeacion' ? 'default' : 'secondary'} className="text-sm">
+                                                {getTipoLabel(entrega.tipo)}
+                                            </Badge>
+                                            <Badge variant={entrega.estado === 'aprobada' ? 'default' : 'secondary'}>
+                                                {entrega.estado}
+                                            </Badge>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-gray-500" />
+                                                <span className="text-sm text-gray-500">Fecha de entrega:</span>
+                                                <span className="text-sm font-medium">{formatDate(entrega.created_at)}</span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4 text-gray-500" />
+                                                <span className="text-sm text-gray-500">Horas registradas:</span>
+                                                <span className="text-sm font-medium">{entrega.horas_planeacion}h</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Progreso */}
+                                    <div className="space-y-4">
+                                        <div className="text-center">
+                                            <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                                {entrega.tipo === 'planeacion' ? 'Progreso de Planeación' : 'Progreso de Evidencia'}
+                                            </h4>
+                                            <div className="relative w-24 h-24 mx-auto">
+                                                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                                                    <path
+                                                        className="text-gray-200"
+                                                        stroke="currentColor"
+                                                        strokeWidth="3"
+                                                        fill="none"
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                    />
+                                                    <path
+                                                        className={entrega.tipo === 'planeacion' ? 'text-blue-600' : 'text-green-600'}
+                                                        stroke="currentColor"
+                                                        strokeWidth="3"
+                                                        fill="none"
+                                                        strokeDasharray={`${entrega.progreso_planeacion}, 100`}
+                                                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                    />
+                                                </svg>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <span className={`text-lg font-bold ${entrega.tipo === 'planeacion' ? 'text-blue-600' : 'text-green-600'}`}>
+                                                        {entrega.progreso_planeacion}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -160,11 +203,37 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-gray-600">
-                                        Entrega planeación: {formatDate(entrega.periodo.fecha_limite_planeacion)} - Entrega evidencia: {formatDate(entrega.periodo.fecha_limite_evidencias)}
+                                        Entrega planeación: {new Date(entrega.periodo.fecha_limite_planeacion).toLocaleDateString()} - Entrega evidencia: {new Date(entrega.periodo.fecha_limite_evidencias).toLocaleDateString()}
                                     </p>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Archivo de evidencia */}
+                        {entrega.tipo === 'evidencia' && entrega.evidencia && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" />
+                                        Archivo de Evidencia
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center gap-3 p-3 border rounded-lg bg-blue-50">
+                                        <FileText className="h-8 w-8 text-blue-600" />
+                                        <div className="flex-1">
+                                            <p className="font-medium text-sm">Archivo adjunto</p>
+                                            <p className="text-xs text-gray-500">Evidencia del avance realizado</p>
+                                        </div>
+                                        <Button asChild size="sm" variant="outline">
+                                            <a href={`/storage/${entrega.evidencia}`} target="_blank" rel="noopener noreferrer">
+                                                Descargar
+                                            </a>
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         {/* Elementos de planeación/avance */}
                         <Card>
@@ -174,19 +243,24 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {entrega.planeacion.map((item, index) => (
-                                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                                            <div className="flex-1">
-                                                <h4 className="font-medium">{item.nombre}</h4>
-                                                <p className="text-sm text-gray-500">
-                                                    {entrega.tipo === 'planeacion' ? 'Porcentaje esperado' : 'Porcentaje completado'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <Badge variant="outline" className="text-lg font-semibold">
+                                        <div key={index} className="p-4 border rounded-lg bg-gray-50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="font-medium text-sm">{item.nombre}</h4>
+                                                <Badge variant="outline" className="text-sm font-semibold">
                                                     {item.porcentaje}%
                                                 </Badge>
+                                            </div>
+                                            <p className="text-xs text-gray-500">
+                                                {entrega.tipo === 'planeacion' ? 'Porcentaje esperado' : 'Porcentaje completado'}
+                                            </p>
+                                            {/* Barra de progreso */}
+                                            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                                <div 
+                                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                                    style={{ width: `${item.porcentaje}%` }}
+                                                ></div>
                                             </div>
                                         </div>
                                     ))}
@@ -235,7 +309,7 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                     </div>
                                     <div>
                                         <p className="font-medium">{entrega.usuario.name}</p>
-                                        <p className="text-sm text-gray-500">Usuario del sistema</p>
+                                        <p className="text-sm text-gray-500">{entrega.usuario.tipo}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -250,16 +324,11 @@ export default function EntregasShow({ entrega }: EntregasShowProps) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                                        <div>
-                                            <p className="font-medium text-sm">Horas de Planeación</p>
-                                            <p className="text-xs text-gray-500">Tiempo dedicado a planificar</p>
-                                        </div>
-                                        <Badge variant="outline" className="text-lg font-semibold">
-                                            {entrega.horas_planeacion}h
-                                        </Badge>
+                                <div className="text-center p-4 border rounded-lg bg-blue-50">
+                                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                                        {entrega.horas_planeacion}h
                                     </div>
+                                    <p className="text-sm text-gray-600">Horas de Planeación</p>
                                 </div>
                             </CardContent>
                         </Card>

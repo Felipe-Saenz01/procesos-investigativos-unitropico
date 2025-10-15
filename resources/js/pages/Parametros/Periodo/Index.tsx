@@ -100,8 +100,8 @@ export default function PeriodoIndex({ periodos }: PeriodoProps) {
                                     {periodos.map((periodo) => (
                                         <TableRow key={periodo.id}>
                                             <TableCell className='w-1/6 font-medium'>{periodo.nombre}</TableCell>
-                                            <TableCell className='w-1/6'>{formatDate(periodo.fecha_limite_planeacion)}</TableCell>
-                                            <TableCell className='w-1/6'>{formatDate(periodo.fecha_limite_evidencias)}</TableCell>
+                                            <TableCell className='w-1/6'>{new Date(periodo.fecha_limite_planeacion).toLocaleDateString()}</TableCell>
+                                            <TableCell className='w-1/6'>{new Date(periodo.fecha_limite_evidencias).toLocaleDateString()}</TableCell>
                                             <TableCell className='w-1/6'>{getEstadoBadge(periodo.estado)}</TableCell>
                                             <TableCell className='w-1/6'>{formatDate(periodo.updated_at)}</TableCell>
                                             <TableCell className='w-1/6 flex gap-2 justify-items-end'>

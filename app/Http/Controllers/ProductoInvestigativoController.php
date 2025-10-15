@@ -180,12 +180,26 @@ class ProductoInvestigativoController extends Controller
             $entregas = $periodo->entregas()->where('producto_investigativo_id', $producto->id)->with('usuario')->get();
             $planeacion = $entregas->where('tipo', 'planeacion')->first();
             $evidencia = $entregas->where('tipo', 'evidencia')->first();
+            
+            // Verificar si las fechas límite están vigentes
+            $now = now();
+            $puedeCrearPlaneacion = !$planeacion && 
+                                   $periodo->estado === 'Activo' && 
+                                   $now->lte($periodo->fecha_limite_planeacion);
+            
+            $puedeCrearEvidencia = $planeacion && 
+                                  !$evidencia && 
+                                  $periodo->estado === 'Activo' && 
+                                  $now->lte($periodo->fecha_limite_evidencias);
+            
             return [
                 'id' => $periodo->id,
                 'nombre' => $periodo->nombre,
                 'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
                 'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
                 'estado' => $periodo->estado,
+                'puede_crear_planeacion' => $puedeCrearPlaneacion,
+                'puede_crear_evidencia' => $puedeCrearEvidencia,
                 'planeacion' => $planeacion ? [
                     'id' => $planeacion->id,
                     'estado' => $planeacion->estado,

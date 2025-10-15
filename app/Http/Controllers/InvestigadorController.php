@@ -54,12 +54,12 @@ class InvestigadorController extends Controller
             'escalafon_profesoral',
             'tipoContrato',
             'proyectosInvestigativos',
-            'productosInvestigativos.tipo_producto',
-            'productosInvestigativos.sub_tipo_producto',
+            'productosInvestigativos.subTipoProducto.tipoProducto',
             'horasInvestigacion.periodo',
             'planesTrabajo'
         ]);
         $investigador->isInvestigador = $investigador->hasRole('Investigador');
+
 
         return inertia('Investigadores/Show', [
             'investigador' => $investigador,
@@ -341,11 +341,42 @@ class InvestigadorController extends Controller
         return to_route('investigadores.planes-trabajo', $investigador->id)->with('success', 'Plan de trabajo eliminado exitosamente.');
     }
 
+    /**
+     * Marca un plan de trabajo como terminado manualmente
+     */
+    public function terminarPlanTrabajo(User $investigador, $planTrabajoId)
+    {
+        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
+        
+        // Verificar permisos: solo líderes y administradores pueden terminar planes
+        $user = Auth::user();
+        if (!$user->hasRole(['Administrador', 'Lider Grupo'])) {
+            abort(403, 'No tienes permisos para terminar este plan de trabajo.');
+        }
+        
+        // Verificar que el plan esté aprobado
+        if ($planTrabajo->estado !== 'Aprobado') {
+            return back()->withErrors(['estado' => 'Solo se pueden terminar planes de trabajo que estén aprobados.']);
+        }
+        
+        if ($planTrabajo->marcarComoTerminado()) {
+            return back()->with('success', 'Plan de trabajo marcado como terminado exitosamente.');
+        }
+        
+        return back()->withErrors(['error' => 'No se pudo terminar el plan de trabajo.']);
+    }
+
     public function showPlanTrabajo(User $investigador, $planTrabajoId)
     {
         $planTrabajo = $investigador->planesTrabajo()
             ->with(['actividades.actividadInvestigacion', 'revisiones.revisor', 'informes.evidencias.actividadPlan.actividadInvestigacion'])
             ->findOrFail($planTrabajoId);
+        
+        // Verificar si el plan debe ser terminado automáticamente
+        if ($planTrabajo->debeSerTerminado()) {
+            $planTrabajo->marcarComoTerminado();
+            $planTrabajo->refresh(); // Recargar el modelo actualizado
+        }
         
         $eligibility = $this->computeInformeEligibility($planTrabajo);
         

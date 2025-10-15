@@ -83,6 +83,7 @@ export default function EvidenciaCreate({ producto, periodo, planeacion, element
     const { data, setData, post, processing, errors, reset } = useForm({
         porcentaje_completado: planeacion.map(() => 0),
         progreso_evidencia: 0,
+        evidencia: null,
     });
 
     useEffect(() => {
@@ -249,6 +250,24 @@ export default function EvidenciaCreate({ producto, periodo, planeacion, element
                                             Porcentaje de avance logrado en la evidencia
                                         </p>
                                     </div>
+                                </div>
+                                <Separator />
+                                <div>
+                                    <Label htmlFor="evidencia" className="text-base font-medium">Archivo de Evidencia *</Label>
+                                    <Input
+                                        id="evidencia"
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.zip,.rar"
+                                        onChange={(e) => setData('evidencia', e.target.files?.[0] || null)}
+                                        className="mt-1"
+                                        required
+                                    />
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Formatos permitidos: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG, ZIP, RAR
+                                    </p>
+                                    {errors.evidencia && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.evidencia}</p>
+                                    )}
                                 </div>
                                 <Separator />
                                 <div>

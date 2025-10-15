@@ -110,7 +110,7 @@ export default function Show({ periodo }: ShowProps) {
                             <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatDate(periodo.fecha_limite_planeacion)}</div>
+                            <div className="text-2xl font-bold">{new Date(periodo.fecha_limite_planeacion).toLocaleDateString()}</div>
                         </CardContent>
                     </Card>
 
@@ -120,7 +120,7 @@ export default function Show({ periodo }: ShowProps) {
                             <FileText className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatDate(periodo.fecha_limite_evidencias)}</div>
+                            <div className="text-2xl font-bold">{new Date(periodo.fecha_limite_evidencias).toLocaleDateString()}</div>
                         </CardContent>
                     </Card>
 

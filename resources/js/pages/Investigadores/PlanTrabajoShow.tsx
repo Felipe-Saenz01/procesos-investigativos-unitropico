@@ -9,7 +9,7 @@ import { HistorialRevisionesModal } from '@/components/HistorialRevisionesModal'
 import { EstadoBadge } from '@/components/EstadoBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Plus, SquarePen, Trash, Eye, History, Send, Download, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, SquarePen, Trash, Eye, History, Send, Download, FileText, ChevronDown, ChevronRight, SquareCheck } from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 import { Separator } from '@/components/ui/separator';
 
@@ -91,6 +91,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [actividadIdToDelete, setActividadIdToDelete] = useState<number | null>(null);
     const [sendRevisionDialogOpen, setSendRevisionDialogOpen] = useState(false);
+    const [terminarDialogOpen, setTerminarDialogOpen] = useState(false);
     const [informesExpanded, setInformesExpanded] = useState<Record<number, boolean>>({});
 
     // Usar el hook de permisos
@@ -120,6 +121,10 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
         put(route('investigadores.planes-trabajo.enviar-revision', [investigador.id, planTrabajo.id]));
     };
 
+    const confirmTerminarPlan = () => {
+        put(route('investigadores.planes-trabajo.terminar', [investigador.id, planTrabajo.id]));
+    };
+
     const handleRevisionSuccess = () => {
         // Reload de la vista despues de ejecutar el modal de revision
         window.location.reload();
@@ -143,7 +148,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
     const canEditPlan = hasPermission('editar-planes-trabajo') && canEditByState;
     
     // Verificar si se puede crear informe (plan aprobado y usuario autorizado)
-    const canCreateInforme = planTrabajo.estado === 'Aprobado' && (user?.id === investigador.id || hasPermission('revisar-planes'));
+    const canCreateInforme = planTrabajo.estado === 'Aprobado' && user?.id === investigador.id;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -186,7 +191,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                             className="bg-blue-600 hover:bg-blue-700"
                                         >
                                             <Eye className="w-4 h-4 mr-2" />
-                                            Realizar Revisión
+                                            Revisar
                                         </Button>
                                     </>
                                 )}
@@ -211,7 +216,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                     variant="outline"
                                 >
                                     <History className="w-4 h-4 mr-2" />
-                                    Historial Revisiones
+                                    Historial
                                 </Button>
                                 
                                 {/* Botón para crear informe */}
@@ -219,7 +224,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                     <Button asChild className="bg-purple-600 hover:bg-purple-700">
                                         <a href={route('investigadores.planes-trabajo.informes.create', [investigador.id, planTrabajo.id])}>
                                             <FileText className="w-4 h-4 mr-2" />
-                                            Crear Informe
+                                            Informe
                                         </a>
                                     </Button>
                                 )}
@@ -231,8 +236,20 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                     className="border-green-500 text-green-600 hover:bg-green-50"
                                 >
                                     <Download className="w-4 h-4 mr-2" />
-                                    Ver PDF
+                                    PDF
                                 </Button>
+                                
+                                {/* Botón para terminar plan (solo para líderes y administradores) */}
+                                {planTrabajo.estado === 'Aprobado' && hasPermission('revisar-planes-trabajo') && (
+                                    <Button
+                                        onClick={() => setTerminarDialogOpen(true)}
+                                        variant="outline"
+                                        className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                                    >
+                                        <SquareCheck className="w-4 h-4 mr-2" />
+                                        Finalizar
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardHeader>
@@ -501,6 +518,17 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                     confirmSendRevision();
                     setSendRevisionDialogOpen(false);
                 }}
+            />
+
+            {/* Confirmación de terminación del plan */}
+            <ConfirmDialog
+                open={terminarDialogOpen}
+                onOpenChange={setTerminarDialogOpen}
+                title="Finalizar Plan de Trabajo"
+                description="¿Estás seguro de que deseas marcar este plan de trabajo como terminado? Esta acción no se puede deshacer y el plan pasará al estado 'Terminado'."
+                confirmText="Finalizar"
+                confirmVariant="default"
+                onConfirm={confirmTerminarPlan}
             />
         </AppLayout>
     );

@@ -50,17 +50,17 @@ interface ProyectoInvestigativo {
 interface ProductoInvestigativo {
     id: number;
     titulo: string;
-    actividad_investigacion: {
-        nombre: string;
-    };
+    resumen: string;
+    progreso: number;
     sub_tipo_producto: {
+        id: number;
         nombre: string;
+        tipo_producto: {
+            id: number;
+            nombre: string;
+        };
     };
-    tipo_producto: {
-        nombre: string;
-    };
-    estado: string;
-    fecha_publicacion?: string;
+    created_at: string;
 }
 interface Props {
     auth: SharedData['auth'];
@@ -74,9 +74,9 @@ interface Props {
         grupo_investigacion?: GrupoInvestigacion;
         escalafon_profesoral?: EscalafonProfesoral;
         tipo_contrato?: TipoContrato;
-        proyectosInvestigativos?: ProyectoInvestigativo[];
-        productosInvestigativos?: ProductoInvestigativo[];
-        horasInvestigacion?: Array<{
+        proyectos_investigativos?: ProyectoInvestigativo[];
+        productos_investigativos?: ProductoInvestigativo[];
+        horas_investigacion?: Array<{
             id: number;
             horas: number;
             estado: string;
@@ -85,23 +85,25 @@ interface Props {
             };
             created_at: string;
         }>;
-        planesTrabajo: Array<{
+        planes_trabajo?: Array<{
             id: number;
-            titulo: string;
+            nombre: string;
             estado: string;
-            fecha_creacion: string;
+            created_at: string;
         }>;
     };
 }
 
 export default function Show({ investigador }: Props) {
     const { hasPermission } = usePermissions();
+    
+    
     const breadcrumbs = [
         { title: 'Investigadores', href: route('investigadores.index') },
         { title: investigador.name, href: '#' }
     ];
 
-    const horasActivas = investigador.horasInvestigacion?.filter(h => h.estado === 'Activo');
+    const horasActivas = investigador.horas_investigacion?.filter(h => h.estado === 'Activo');
     const totalHorasActivas = horasActivas?.reduce((sum, h) => sum + h.horas, 0);
 
     return (
@@ -218,7 +220,7 @@ export default function Show({ investigador }: Props) {
                                         <FolderOpen className="h-8 w-8 text-blue-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Proyectos</p>
-                                            <p className="text-2xl font-bold">{investigador.proyectosInvestigativos?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.proyectos_investigativos?.length || 0}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -230,7 +232,7 @@ export default function Show({ investigador }: Props) {
                                         <FileText className="h-8 w-8 text-green-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Productos</p>
-                                            <p className="text-2xl font-bold">{investigador.productosInvestigativos?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.productos_investigativos?.length || 0}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -254,7 +256,7 @@ export default function Show({ investigador }: Props) {
                                         <TrendingUp className="h-8 w-8 text-purple-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Planes de Trabajo</p>
-                                            <p className="text-2xl font-bold">{investigador.planesTrabajo?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.planes_trabajo?.length || 0}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -270,7 +272,7 @@ export default function Show({ investigador }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {!investigador.proyectosInvestigativos || investigador.proyectosInvestigativos.length === 0 ? (
+                                {!investigador.proyectos_investigativos || investigador.proyectos_investigativos.length === 0 ? (
                                     <p className='text-gray-400 text-center py-4'>No hay proyectos asignados.</p>
                                 ) : (
                                     <Table>
@@ -279,14 +281,23 @@ export default function Show({ investigador }: Props) {
                                                 <TableHead>Título</TableHead>
                                                 <TableHead>Estado</TableHead>
                                                 <TableHead>Fecha Creación</TableHead>
+                                                <TableHead>Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {investigador.proyectosInvestigativos.map((proyecto) => (
+                                            {investigador.proyectos_investigativos.map((proyecto) => (
                                                 <TableRow key={proyecto.id}>
                                                     <TableCell className='font-medium'>{proyecto.titulo}</TableCell>
                                                     <TableCell><EstadoBadge estado={proyecto.estado} /></TableCell>
                                                     <TableCell>{new Date(proyecto.created_at).toLocaleDateString()}</TableCell>
+                                                    <TableCell>
+                                                        <Link href={route('proyectos.show', proyecto.id)}>
+                                                            <Button variant="outline" size="sm">
+                                                                <Eye className="h-4 w-4 mr-1" />
+                                                                Ver
+                                                            </Button>
+                                                        </Link>
+                                                    </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -304,31 +315,33 @@ export default function Show({ investigador }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {!investigador.productosInvestigativos || investigador.productosInvestigativos.length === 0 ? (
+                                {!investigador.productos_investigativos || investigador.productos_investigativos.length === 0 ? (
                                     <p className='text-gray-400 text-center py-4'>No hay productos registrados.</p>
                                 ) : (
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Título</TableHead>
-                                                <TableHead>Tipo</TableHead>
                                                 <TableHead>Sub-tipo</TableHead>
-                                                <TableHead>Estado</TableHead>
-                                                <TableHead>Fecha Publicación</TableHead>
+                                                <TableHead>Progreso</TableHead>
+                                                <TableHead>Fecha Creación</TableHead>
+                                                <TableHead>Acciones</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {investigador.productosInvestigativos?.map((producto) => (
+                                            {investigador.productos_investigativos?.map((producto) => (
                                                 <TableRow key={producto.id}>
                                                     <TableCell className='font-medium'>{producto.titulo}</TableCell>
-                                                    <TableCell>{producto.tipo_producto.nombre}</TableCell>
                                                     <TableCell>{producto.sub_tipo_producto.nombre}</TableCell>
-                                                    <TableCell><EstadoBadge estado={producto.estado} /></TableCell>
+                                                    <TableCell>{producto.progreso}%</TableCell>
+                                                    <TableCell>{new Date(producto.created_at).toLocaleDateString()}</TableCell>
                                                     <TableCell>
-                                                        {producto.fecha_publicacion
-                                                            ? new Date(producto.fecha_publicacion).toLocaleDateString()
-                                                            : 'No publicado'
-                                                        }
+                                                        <Link href={route('productos.show', producto.id)}>
+                                                            <Button variant="outline" size="sm">
+                                                                <Eye className="h-4 w-4 mr-1" />
+                                                                Ver
+                                                            </Button>
+                                                        </Link>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -347,7 +360,7 @@ export default function Show({ investigador }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {investigador.horasInvestigacion?.length === 0 ? (
+                                {investigador.horas_investigacion?.length === 0 ? (
                                     <p className='text-gray-400 text-center py-4'>No hay horas de investigación asignadas.</p>
                                 ) : (
                                     <Table>
@@ -360,7 +373,7 @@ export default function Show({ investigador }: Props) {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {investigador.horasInvestigacion?.map((horas) => (
+                                            {investigador.horas_investigacion?.map((horas) => (
                                                 <TableRow key={horas.id}>
                                                     <TableCell className='font-medium'>{horas.periodo.nombre}</TableCell>
                                                     <TableCell>{horas.horas} horas</TableCell>
@@ -383,16 +396,16 @@ export default function Show({ investigador }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {!investigador.planesTrabajo || investigador.planesTrabajo.length === 0 ? (
+                                {!investigador.planes_trabajo || investigador.planes_trabajo.length === 0 ? (
                                     <p className='text-gray-400 text-center py-4'>No hay planes de trabajo registrados.</p>
                                 ) : (
                                     <div className="space-y-4">
-                                        {investigador.planesTrabajo.map((plan) => (
+                                        {investigador.planes_trabajo.map((plan) => (
                                             <div key={plan.id} className="flex items-center justify-between p-4 border rounded-lg">
                                                 <div>
-                                                    <h4 className="font-medium">{plan.titulo}</h4>
+                                                    <h4 className="font-medium">{plan.nombre}</h4>
                                                     <p className="text-sm text-gray-600">
-                                                        Creado: {new Date(plan.fecha_creacion).toLocaleDateString()}
+                                                        Creado: {new Date(plan.created_at).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-3">

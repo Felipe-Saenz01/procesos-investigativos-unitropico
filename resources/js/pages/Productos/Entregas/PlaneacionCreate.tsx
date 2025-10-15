@@ -45,7 +45,7 @@ interface Periodo {
     estado: string;
     horas_disponibles: number;
     fecha_limite_planeacion: string;
-    fecha_limite_evidencia: string;
+    fecha_limite_evidencias: string;
 }
 
 interface Elemento {
@@ -113,13 +113,13 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
 
     // Convertir periodos a opciones para SearchSelect
     const periodoOptions = periodos.map(periodo => ({
-        label: `${periodo.nombre} (${new Date(periodo.fecha_limite_planeacion).toLocaleDateString()} - ${new Date(periodo.fecha_limite_evidencia).toLocaleDateString()})`,
+        label: `${periodo.nombre} (${new Date(periodo.fecha_limite_planeacion).toLocaleDateString()} - ${new Date(periodo.fecha_limite_evidencias).toLocaleDateString()})`,
         value: periodo.id.toString()
     }));
 
     // Convertir elementos a opciones para SearchSelect
     const elementoOptions = elementos.map(elemento => ({
-        label: `${elemento.nombre} (${elemento.progreso}% progreso)`,
+        label: `${elemento.nombre} (${elemento.progreso}%)`,
         value: elemento.id.toString()
     }));
 
@@ -273,11 +273,6 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
                                         />
                                         <p className="text-sm text-gray-500 mt-1">
                                             Horas a invertir en la planeación
-                                            {data.periodo_id && (
-                                                <span className="block text-blue-600">
-                                                    Horas disponibles: {periodos.find(p => p.id.toString() === data.periodo_id)?.horas_disponibles || 0}
-                                                </span>
-                                            )}
                                         </p>
                                     </div>
                                 </div>
@@ -310,6 +305,7 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
                                                         onValueChange={(value) => updatePlaneacionItem(index, 'elemento_id', String(value))}
                                                         placeholder="Seleccionar elemento..."
                                                         className="mt-1"
+                                                        side="top"
                                                     />
                                                 </div>
                                                 <div className="">

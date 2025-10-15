@@ -295,7 +295,7 @@ export default function ProyectosCreate({ usuarios = [], usuarioLogueado }: Crea
                                     </div>
 
                                     <div>
-                                        <Label>Usuarios del Proyecto *</Label>
+                                        <Label>Participantes del Proyecto *</Label>
                                         <MultiSelect
                                             options={usuarioOptions}
                                             selected={data.usuarios}
