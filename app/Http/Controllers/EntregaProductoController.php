@@ -694,7 +694,7 @@ class EntregaProductoController extends Controller
     public function detallePeriodo(ProductoInvestigativo $producto, \App\Models\Periodo $periodo)
     {
         // Verificar que el usuario tenga acceso al producto
-        if (!$producto->usuarios->contains(Auth::id())) {
+        if (!$producto->usuarios->contains(Auth::id()) && Auth::user()->rol === 'Investigador') {
             abort(403, 'No tienes permisos para ver este producto.');
         }
 

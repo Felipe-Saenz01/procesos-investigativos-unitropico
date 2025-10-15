@@ -76,14 +76,18 @@ interface PlaneacionCreateProps {
 }
 
 export default function PlaneacionCreate({ producto, periodos, elementos, entregasExistentes }: PlaneacionCreateProps) {
-    // Si ya existe una entrega de planeación, no permitir acceso
-    const planeacionExistente = entregasExistentes.find(e => e.tipo === 'planeacion');
+    // Validación por período: permitir una sola planeación por período
     const { data, setData, post, processing, errors, reset } = useForm({
         periodo_id: '',
         planeacion: [{ elemento_id: '', porcentaje: 0 }],
         progreso_planeacion: 0,
         horas_planeacion: 1,
     });
+
+    // Determinar si el período seleccionado ya tiene una planeación registrada
+    const selectedPeriodHasPlaneacion = !!(data.periodo_id && entregasExistentes.some(
+        (e) => e.tipo === 'planeacion' && e.periodo.id.toString() === data.periodo_id
+    ));
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -135,25 +139,8 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
         );
     };
 
-    if (planeacionExistente) {
-        return (
-            <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Entrega de Planeación" />
-                <div className="flex flex-col items-center justify-center h-full p-8">
-                    <Alert variant="destructive">
-                        <CircleAlert />
-                        <AlertTitle>Ya existe una entrega de planeación para este producto.</AlertTitle>
-                        <AlertDescription>
-                            No puedes crear múltiples entregas de planeación para el mismo producto.
-                        </AlertDescription>
-                        <Button asChild className="mt-4">
-                            <Link href={route('productos.show', producto.id)}>Volver al producto</Link>
-                        </Button>
-                    </Alert>
-                </div>
-            </AppLayout>
-        );
-    }
+    // Nota: El backend valida también por período. Aquí evitamos bloquear globalmente
+    // cuando existan planeaciones en otros períodos.
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -229,6 +216,15 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
                                         <p className="text-sm text-gray-500 mt-1">
                                             Horas disponibles: {periodos.find(p => p.id.toString() === data.periodo_id)?.horas_disponibles || 0}
                                         </p>
+                                    )}
+                                    {selectedPeriodHasPlaneacion && (
+                                        <Alert variant="destructive" className="mt-3">
+                                            <CircleAlert />
+                                            <AlertTitle>Ya existe una planeación en este período.</AlertTitle>
+                                            <AlertDescription>
+                                                Selecciona otro período activo o edita la planeación existente.
+                                            </AlertDescription>
+                                        </Alert>
                                     )}
                                 </div>
 
@@ -341,7 +337,7 @@ export default function PlaneacionCreate({ producto, periodos, elementos, entreg
                             <Button type='button' variant="destructive" className='mr-3'>
                                 <Link href={route('productos.show', producto.id)}>Cancelar</Link>
                             </Button>
-                            <Button type='submit' disabled={processing} className='bg-primary hover:bg-primary/90'>
+                            <Button type='submit' disabled={processing || selectedPeriodHasPlaneacion} className='bg-primary hover:bg-primary/90'>
                                 {processing ? 'Creando...' : 'Crear Planeación'}
                             </Button>
                         </CardFooter>
