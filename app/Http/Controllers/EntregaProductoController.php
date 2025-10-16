@@ -183,7 +183,7 @@ class EntregaProductoController extends Controller
 
         // Si es evidencia, actualizar el progreso del producto
         if ($request->tipo === 'evidencia') {
-            $this->actualizarProgresoProducto($producto->id);
+            $this->actualizarProgresoProducto($producto->id, $request->progreso_evidencia);
             
             // Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
             // y actualizar el estado del proyecto asociado
@@ -575,7 +575,7 @@ class EntregaProductoController extends Controller
         $this->actualizarProgresoElementos($producto->id, $planeacion->planeacion, $request->porcentaje_completado);
 
         // Actualizar el progreso general del producto
-        $this->actualizarProgresoProducto($producto->id);
+        $this->actualizarProgresoProducto($producto->id, $request->progreso_evidencia);
 
         // Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
         // y actualizar el estado del proyecto asociado
@@ -608,26 +608,18 @@ class EntregaProductoController extends Controller
      * Obtener las horas disponibles para evidencia (restando las horas de planeación)
      */
 
-    private function actualizarProgresoProducto($productoId)
+    private function actualizarProgresoProducto($productoId, $nuevoProgreso)
     {
-        // Obtener todas las entregas de evidencia del producto
-        $entregasEvidencia = EntregaProducto::where('producto_investigativo_id', $productoId)
-            ->where('tipo', 'evidencia')
-            ->get();
+        $producto = ProductoInvestigativo::find($productoId);
+        
+        if (!$producto) return;
+        
 
-        if ($entregasEvidencia->isEmpty()) {
-            return;
+        if ($nuevoProgreso > $producto->progreso) {
+            $producto->update([
+                'progreso' => $nuevoProgreso
+            ]);
         }
-
-        // Calcular el progreso promedio de todas las evidencias
-        // Usando progreso_planeacion ya que es el campo que almacena el progreso de evidencia
-        $progresoTotal = $entregasEvidencia->sum('progreso_planeacion');
-        $progresoPromedio = round($progresoTotal / $entregasEvidencia->count());
-
-        // Actualizar el progreso del producto
-        ProductoInvestigativo::where('id', $productoId)->update([
-            'progreso' => $progresoPromedio
-        ]);
     }
 
     /**

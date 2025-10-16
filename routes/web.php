@@ -143,8 +143,9 @@ Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/
     // Rutas para Elementos de Productos
     Route::resource('productos.elementos', ElementosProductoController::class);
 
-    //Rutas para Modulo Inteligente
+    //Rutas para Módulo Revisión Inteligente
     Route::resource('modulo-inteligente', RevisionInteligenteController::class);
+    Route::get('modulo-inteligente/{producto}/comparar', [RevisionInteligenteController::class, 'comparar'])->name('modulo-inteligente.comparar');
 
     // Rutas para Entregas de Productos
     Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');
