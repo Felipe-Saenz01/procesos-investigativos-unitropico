@@ -7,6 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Eye, Plus, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import Paginator from '@/components/Paginator';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -50,9 +51,10 @@ interface ProductoInvestigativo {
 
 interface ProductosIndexProps {
     productos: ProductoInvestigativo[];
+    productos_links?: { url: string | null; label: string; active: boolean }[];
 }
 
-export default function ProductosIndex({ productos }: ProductosIndexProps) {
+export default function ProductosIndex({ productos, productos_links }: ProductosIndexProps) {
     const { props } = usePage();
     const flash = props.flash as { success?: string; error?: string };
 
@@ -161,6 +163,7 @@ export default function ProductosIndex({ productos }: ProductosIndexProps) {
                                     </Button>
                                 </div>
                             )}
+                            <Paginator links={productos_links} />
                         </CardContent>
                     </Card>
                 </div>

@@ -20,14 +20,52 @@ class ProyectoInvestigativoController extends Controller
      */
     public function index()
     {
-        $proyectos = ProyectoInvestigativo::with(['usuarios', 'grupos', 'productos'])
-            ->whereHas('usuarios', function($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('Administrador');
+        $isLider = $user->hasRole('Lider Grupo');
+        $isInvestigador = $user->hasRole('Investigador');
+
+        if ($isAdmin) {
+            // Administrador ve todos los proyectos
+            $paginator = ProyectoInvestigativo::with(['usuarios', 'grupos', 'productos'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10)
+                ->withQueryString();
+        } elseif ($isLider) {
+            // Líder ve solo proyectos de su grupo de investigación
+            $paginator = ProyectoInvestigativo::with(['usuarios', 'grupos', 'productos'])
+                ->whereHas('grupos', function($query) use ($user) {
+                    $query->where('grupo_investigacion_id', $user->grupo_investigacion_id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(10)
+                ->withQueryString();
+        } elseif ($isInvestigador) {
+            // Investigador ve solo sus proyectos
+            $paginator = ProyectoInvestigativo::with(['usuarios', 'grupos', 'productos'])
+                ->whereHas('usuarios', function($query) {
+                    $query->where('user_id', Auth::id());
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(10)
+                ->withQueryString();
+        } else {
+            // Usuario sin rol válido, redirigir al dashboard
+            return redirect()->route('dashboard');
+        }
+
+        $proyectos = collect($paginator->items());
+        
+        $proyectos_links = $paginator->toArray()['links'] ?? [];
+
         return Inertia::render('Proyectos/Index', [
             'proyectos' => $proyectos,
+            'proyectos_links' => $proyectos_links,
+            'user_permissions' => [
+                'can_edit_proyecto' => $user->can('editar-proyecto'),
+                'can_delete_proyecto' => $user->can('eliminar-proyecto'),
+            ],
+            'user_id' => $user->id,
         ]);
     }
 
@@ -189,7 +227,7 @@ class ProyectoInvestigativoController extends Controller
     public function show(ProyectoInvestigativo $proyecto)
     {
         // Verificar que el usuario solo pueda ver proyectos donde esté asociado
-        if (!$proyecto->usuarios->contains(Auth::id())) {
+        if (!$proyecto->usuarios->contains(Auth::id()) && Auth::user()->hasRole('Investigador')) {
             abort(403, 'No tienes permisos para ver este proyecto.');
         }
 
@@ -203,9 +241,17 @@ class ProyectoInvestigativoController extends Controller
      */
     public function edit(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda editar proyectos donde esté asociado
-        if (!$proyecto->usuarios->contains(Auth::id())) {
-            abort(403, 'No tienes permisos para editar este proyecto.');
+        $user = Auth::user();
+        
+        // Verificar permisos de edición
+        if (!$user->can('editar-proyecto')) {
+            abort(403, 'No tienes permisos para editar proyectos.');
+        }
+        
+        // Verificar que el usuario sea el autor del proyecto (primer usuario asociado)
+        $primerUsuario = $proyecto->usuarios()->orderBy('proyecto_investigativo_user.created_at')->first();
+        if (!$primerUsuario || $primerUsuario->id !== $user->id) {
+            abort(403, 'Solo el autor del proyecto puede editarlo.');
         }
 
         $usuarios = User::whereIn('tipo', ['Investigador', 'Lider Grupo'])->get(['id', 'name', 'tipo']);
@@ -228,9 +274,17 @@ class ProyectoInvestigativoController extends Controller
      */
     public function update(Request $request, ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda actualizar proyectos donde esté asociado
-        if (!$proyecto->usuarios()->where('user_id', Auth::id())->exists()) {
-            abort(403, 'No tienes permisos para actualizar este proyecto.');
+        $user = Auth::user();
+        
+        // Verificar permisos de edición
+        if (!$user->can('editar-proyecto')) {
+            abort(403, 'No tienes permisos para editar proyectos.');
+        }
+        
+        // Verificar que el usuario sea el autor del proyecto (primer usuario asociado)
+        $primerUsuario = $proyecto->usuarios()->orderBy('proyecto_investigativo_user.created_at')->first();
+        if (!$primerUsuario || $primerUsuario->id !== $user->id) {
+            abort(403, 'Solo el autor del proyecto puede editarlo.');
         }
 
         $request->validate([
@@ -295,9 +349,17 @@ class ProyectoInvestigativoController extends Controller
      */
     public function destroy(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda eliminar proyectos donde esté asociado
-        if (!$proyecto->usuarios()->where('user_id', Auth::id())->exists()) {
-            abort(403, 'No tienes permisos para eliminar este proyecto.');
+        $user = Auth::user();
+        
+        // Verificar permisos de eliminación
+        if (!$user->can('eliminar-proyecto')) {
+            abort(403, 'No tienes permisos para eliminar proyectos.');
+        }
+        
+        // Verificar que el usuario sea el autor del proyecto (primer usuario asociado)
+        $primerUsuario = $proyecto->usuarios()->orderBy('proyecto_investigativo_user.created_at')->first();
+        if (!$primerUsuario || $primerUsuario->id !== $user->id) {
+            abort(403, 'Solo el autor del proyecto puede eliminarlo.');
         }
         
         // Verificar si el proyecto tiene productos asociados usando la relación

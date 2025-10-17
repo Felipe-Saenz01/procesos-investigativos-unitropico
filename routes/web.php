@@ -129,7 +129,7 @@ Route::middleware(['auth.home', 'verified'])->group(function () {
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes', [InformePlanTrabajoController::class, 'index'])->name('investigadores.planes-trabajo.informes.index');
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/create', [InformePlanTrabajoController::class, 'create'])->name('investigadores.planes-trabajo.informes.create');
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/pdf', [InformePlanTrabajoController::class, 'generarPdf'])->name('investigadores.planes-trabajo.informes.pdf');
-Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/preview', [InformePlanTrabajoController::class, 'previewPdf'])->name('investigadores.planes-trabajo.informes.preview');
+    Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/preview', [InformePlanTrabajoController::class, 'previewPdf'])->name('investigadores.planes-trabajo.informes.preview');
     Route::get('investigadores/{investigador}/planes-trabajo/{planTrabajo}/informes/{informe}/evidencias/{evidencia}/descargar', [InformePlanTrabajoController::class, 'descargarEvidencia'])->name('investigadores.planes-trabajo.informes.evidencias.descargar');
 
     // Rutas para Proyectos Investigativos

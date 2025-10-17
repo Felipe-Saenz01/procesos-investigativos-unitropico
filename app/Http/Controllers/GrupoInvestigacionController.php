@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GrupoInvestigacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,7 +15,7 @@ class GrupoInvestigacionController extends Controller
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         if ($user->hasRole('Lider Grupo') || $user->hasRole('Investigador')) {
             if ($user->grupo_investigacion_id) {
                 return to_route('grupo-investigacion.show', $user->grupo_investigacion_id);
@@ -22,12 +23,18 @@ class GrupoInvestigacionController extends Controller
             return to_route('dashboard')->with('error', 'No perteneces a un grupo de investigación.');
         }
 
-        $gruposInvestigacion = GrupoInvestigacion::with(['usuarios' => function($query) {
+        $paginator = GrupoInvestigacion::with(['usuarios' => function($query) {
             $query->select('id', 'name', 'email', 'tipo', 'grupo_investigacion_id');
-        }])->orderBy('created_at', 'desc')->get();
+        }])->orderBy('created_at', 'desc')
+            ->paginate(10)
+            ->withQueryString();
+
+        $gruposInvestigacion = collect($paginator->items());
+        $gruposLinks = $paginator->toArray()['links'] ?? [];
 
         return Inertia::render('GrupoInvestigacion/Index', [
             'gruposInvestigacion' => $gruposInvestigacion,
+            'grupos_links' => $gruposLinks,
         ]);
     }
 

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import Paginator from '@/components/Paginator';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -71,40 +71,7 @@ export default function RevisionInteligenteIndex({ productos }: IndexProps) {
                     </div>
                 )}
 
-                {Array.isArray(productos.links) && productos.links.length > 0 && (
-                    <div className="pt-4">
-                        <Pagination>
-                            <PaginationContent>
-                                {productos.links.map((link: PaginationLinkItem, idx: number) => {
-                                    const label = String(link.label || '');
-                                    const isPrev = /Anterior|Previous|«|&laquo;/.test(label);
-                                    const isNext = /Siguiente|Next|»|&raquo;/.test(label);
-                                    const href = link.url || '#';
-
-                                    if (isPrev) {
-                                        return (
-                                            <PaginationItem key={`prev-${idx}`}>
-                                                <PaginationPrevious href={href} size="sm" />
-                                            </PaginationItem>
-                                        );
-                                    }
-                                    if (isNext) {
-                                        return (
-                                            <PaginationItem key={`next-${idx}`}>
-                                                <PaginationNext href={href} size="sm" />
-                                            </PaginationItem>
-                                        );
-                                    }
-                                    return (
-                                        <PaginationItem key={`p-${idx}`}>
-                                            <PaginationLink href={href} isActive={!!link.active} size="sm" dangerouslySetInnerHTML={{ __html: label }} />
-                                        </PaginationItem>
-                                    );
-                                })}
-                            </PaginationContent>
-                        </Pagination>
-                    </div>
-                )}
+                <Paginator links={productos.links} />
             </div>
         </AppLayout>
     );

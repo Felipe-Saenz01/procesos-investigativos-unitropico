@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, FileText, Calendar, Users, TrendingUp, TrendingDown, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, TrendingUp, TrendingDown, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -122,20 +122,9 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
         });
     };
 
-    const getTipoBadgeVariant = (tipo: string) => {
-        switch (tipo) {
-            case 'Lider Grupo':
-                return 'default';
-            case 'Investigador':
-                return 'secondary';
-            default:
-                return 'outline';
-        }
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Detalle del Período: ${periodo.nombre}`} />
+            <Head title={`Detalle entregas del Período: ${periodo.nombre}`} />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -159,43 +148,63 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* Información del Producto */}
-                        <div>
-                            <h3 className="font-semibold text-lg mb-2">{producto.titulo}</h3>
-                            <p className="text-sm text-gray-600 mb-4">{producto.resumen}</p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">Proyecto:</span>
-                                    <p className="font-medium">{producto.proyecto.titulo}</p>
-                                </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">Tipo:</span>
-                                    <p className="font-medium">{producto.sub_tipo_producto.nombre}</p>
-                                </div>
-                                <div>
-                                    <span className="text-sm font-medium text-gray-500">Progreso General:</span>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                            <div 
-                                                className="bg-blue-600 h-2 rounded-full" 
-                                                style={{ width: `${producto.progreso}%` }}
-                                            ></div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3/4">
+                                <h3 className="font-semibold text-lg mb-2">{producto.titulo}</h3>
+                                <p className="text-sm text-gray-600 mb-4">{producto.resumen}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Proyecto:</span>
+                                        <p className="font-medium">{producto.proyecto.titulo}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Tipo:</span>
+                                        <p className="font-medium">{producto.sub_tipo_producto.nombre}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-500">Período:</span>
+                                        <div className="flex items-center gap-2">
+                                            <Calendar className="h-5 w-5" />
+                                            <p className="font-medium">{periodo.nombre}</p>
+                                            <Badge variant={periodo.estado === 'Activo' ? 'default' : 'secondary'}>
+                                                {periodo.estado}
+                                            </Badge>
                                         </div>
-                                        <span className="text-sm font-medium">{producto.progreso}%</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Información del Período */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Calendar className="h-5 w-5" />
-                                <h3 className="font-semibold text-lg">{periodo.nombre}</h3>
-                                <Badge variant={periodo.estado === 'Activo' ? 'default' : 'secondary'}>
-                                    {periodo.estado}
-                                </Badge>
+                            <div className="w-1/4 flex items-center justify-center">
+                                <div className="">
+                                    <div className="text-center">
+                                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                            Progreso General
+                                        </h4>
+                                        <div className="relative w-30 h-30 mx-auto">
+                                            <svg className="w-30 h-30 transform -rotate-90" viewBox="0 0 36 36">
+                                                <path
+                                                    className="text-gray-200"
+                                                    stroke="currentColor"
+                                                    strokeWidth="3"
+                                                    fill="none"
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                                <path
+                                                    className="text-blue-600"
+                                                    stroke="currentColor"
+                                                    strokeWidth="3"
+                                                    fill="none"
+                                                    strokeDasharray={`${producto.progreso}, 100`}
+                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-lg font-bold text-blue-600">
+                                                    {producto.progreso}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -346,16 +355,19 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ChartContainer config={{
-                                planeacion: {
-                                    label: "Planeación (%)",
-                                    color: "hsl(var(--chart-1))",
-                                },
-                                evidencia: {
-                                    label: "Evidencia (%)",
-                                    color: "hsl(var(--chart-2))",
-                                },
-                            }}>
+                            <ChartContainer 
+                                config={{
+                                    planeacion: {
+                                        label: "Planeación (%)",
+                                        color: "hsl(var(--chart-1))",
+                                    },
+                                    evidencia: {
+                                        label: "Evidencia (%)",
+                                        color: "hsl(var(--chart-2))",
+                                    },
+                                }}
+                                className="h-[320px] w-full"
+                            >
                                 <BarChart
                                     data={[
                                         {
@@ -369,17 +381,19 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                                             evidencia: comparacion.elementos_evidencia[index]?.completado || 0,
                                         }))
                                     ]}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    margin={{ top: 16, right: 24, left: 16, bottom: 4 }}
+                                    width={undefined}
+                                    height={256}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
-                                        dataKey="elemento" 
+                                    <XAxis
+                                        dataKey="elemento"
                                         angle={-45}
                                         textAnchor="end"
-                                        height={100}
-                                        fontSize={12}
+                                        height={80}
+                                        fontSize={10}
                                     />
-                                    <YAxis />
+                                    <YAxis fontSize={10} />
                                     <ChartTooltip content={<ChartTooltipContent />} />
                                     <Bar dataKey="planeacion" fill="hsl(var(--chart-1))" name="Planeación" />
                                     <Bar dataKey="evidencia" fill="hsl(var(--chart-2))" name="Evidencia" />
@@ -403,7 +417,6 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                                         <TableHead className="text-center">Planeado (%)</TableHead>
                                         <TableHead className="text-center">Completado (%)</TableHead>
                                         <TableHead className="text-center">Diferencia</TableHead>
-                                        <TableHead className="text-center">Estado</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -411,8 +424,7 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                                         const elementoEvidencia = comparacion.elementos_evidencia[index];
                                         const completado = elementoEvidencia?.completado || 0;
                                         const diferencia = completado - elementoPlaneacion.porcentaje;
-                                        const cumplido = completado >= elementoPlaneacion.porcentaje;
-                                        
+
                                         return (
                                             <TableRow key={index}>
                                                 <TableCell className="font-medium">
@@ -426,19 +438,6 @@ export default function PeriodoDetalle({ producto, periodo, planeacion, evidenci
                                                 </TableCell>
                                                 <TableCell className={`text-center font-bold ${diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                     {diferencia >= 0 ? '+' : ''}{diferencia}%
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {cumplido ? (
-                                                        <Badge variant="default" className="bg-green-600">
-                                                            <CheckCircle className="h-3 w-3 mr-1" />
-                                                            Cumplido
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge variant="destructive">
-                                                            <XCircle className="h-3 w-3 mr-1" />
-                                                            Pendiente
-                                                        </Badge>
-                                                    )}
                                                 </TableCell>
                                             </TableRow>
                                         );

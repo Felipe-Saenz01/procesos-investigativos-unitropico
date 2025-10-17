@@ -9,9 +9,11 @@ import { Convocatoria } from '@/types';
 import { type BreadcrumbItem } from '@/types';
 import { Eye, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
 import { EstadoBadge } from '@/components/EstadoBadge';
+import Paginator from '@/components/Paginator';
 
 interface Props {
   convocatorias: Convocatoria[];
+  convocatorias_links?: { url: string | null; label: string; active: boolean }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -21,7 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   }
 ];
 
-export default function ConvocatoriasIndex({ convocatorias }: Props) {
+export default function ConvocatoriasIndex({ convocatorias, convocatorias_links }: Props) {
   const { hasPermission } = usePermissions();
   const { delete: destroy } = useForm();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -128,12 +130,11 @@ export default function ConvocatoriasIndex({ convocatorias }: Props) {
 
                           {hasPermission('eliminar-convocatorias') && (
                             <Button
-                              variant="outline"
+                              variant="destructive"
                               size="sm"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
                               onClick={() => handleRequestDelete(convocatoria)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-white" />
                             </Button>
                           )}
                         </div>
@@ -150,6 +151,9 @@ export default function ConvocatoriasIndex({ convocatorias }: Props) {
               </div>
             </div>
           )}
+          <div className="px-5 pb-6">
+            <Paginator links={convocatorias_links} />
+          </div>
         </div>
 
 

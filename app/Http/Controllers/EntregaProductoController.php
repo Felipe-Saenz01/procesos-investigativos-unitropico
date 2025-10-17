@@ -20,7 +20,7 @@ class EntregaProductoController extends Controller
      */
     public function index()
     {
-        //
+        return redirect()->route('dashboard');
     }
 
     /**
@@ -28,38 +28,7 @@ class EntregaProductoController extends Controller
      */
     public function create(ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al producto
-        if (!$producto->usuarios->contains(Auth::id())) {
-            abort(403, 'No tienes permisos para crear entregas para este producto.');
-        }
-
-        // Obtener periodos activos
-        $periodos = Periodo::where('estado', 'Activo')->get();
-
-        // Obtener entregas existentes del producto
-        $entregasExistentes = $producto->entregas()
-            ->with('periodo')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Calcular horas disponibles para cada período
-        $periodosConHoras = $periodos->map(function ($periodo) {
-            $horasDisponibles = $this->getHorasDisponiblesUsuario(Auth::id(), $periodo->id);
-            return [
-                'id' => $periodo->id,
-                'nombre' => $periodo->nombre,
-                'fecha_limite_planeacion' => $periodo->fecha_limite_planeacion,
-                'fecha_limite_evidencias' => $periodo->fecha_limite_evidencias,
-                'estado' => $periodo->estado,
-                'horas_disponibles' => $horasDisponibles,
-            ];
-        });
-
-        return Inertia::render('Productos/Entregas/Create', [
-            'producto' => $producto->load(['proyecto', 'subTipoProducto']),
-            'periodos' => $periodosConHoras,
-            'entregasExistentes' => $entregasExistentes,
-        ]);
+        return redirect()->route('dashboard');
     }
 
     /**
@@ -67,130 +36,7 @@ class EntregaProductoController extends Controller
      */
     public function store(Request $request, ProductoInvestigativo $producto)
     {
-        // Verificar que el usuario tenga acceso al producto
-        if (!$producto->usuarios->contains(Auth::id())) {
-            abort(403, 'No tienes permisos para crear entregas para este producto.');
-        }
-
-        $request->validate([
-            'tipo' => 'required|in:planeacion,evidencia',
-            'periodo_id' => 'required|exists:periodos,id',
-            'planeacion' => 'required|array|min:1',
-            'planeacion.*.nombre' => 'required|string|max:255',
-            'planeacion.*.porcentaje' => 'required|numeric|min:0|max:100',
-            'progreso_planeacion' => 'required|integer|min:0|max:100',
-            'progreso_evidencia' => 'nullable|integer|min:0|max:100',
-            'horas_planeacion' => 'required|integer|min:1',
-            'horas_evidencia' => 'nullable|integer|min:0',
-        ], [
-            'tipo.required' => 'El tipo de entrega es requerido.',
-            'tipo.in' => 'El tipo debe ser planeación o evidencia.',
-            'periodo_id.required' => 'Debe seleccionar un período.',
-            'periodo_id.exists' => 'El período seleccionado no existe.',
-            'planeacion.required' => 'La planificación es requerida.',
-            'planeacion.array' => 'La planificación debe ser una lista.',
-            'planeacion.min' => 'Debe agregar al menos un elemento de planificación.',
-            'planeacion.*.nombre.required' => 'El nombre del elemento es requerido.',
-            'planeacion.*.porcentaje.required' => 'El porcentaje es requerido.',
-            'planeacion.*.porcentaje.numeric' => 'El porcentaje debe ser un número.',
-            'planeacion.*.porcentaje.min' => 'El porcentaje no puede ser menor a 0.',
-            'planeacion.*.porcentaje.max' => 'El porcentaje no puede ser mayor a 100.',
-            'progreso_planeacion.required' => 'El progreso de planeación es requerido.',
-            'progreso_planeacion.integer' => 'El progreso debe ser un número entero.',
-            'progreso_planeacion.min' => 'El progreso no puede ser menor a 0.',
-            'progreso_planeacion.max' => 'El progreso no puede ser mayor a 100.',
-            'progreso_evidencia.integer' => 'El progreso de evidencia debe ser un número entero.',
-            'progreso_evidencia.min' => 'El progreso de evidencia no puede ser menor a 0.',
-            'progreso_evidencia.max' => 'El progreso de evidencia no puede ser mayor a 100.',
-            'horas_planeacion.required' => 'Las horas de planeación son requeridas.',
-            'horas_planeacion.integer' => 'Las horas deben ser un número entero.',
-            'horas_planeacion.min' => 'Las horas deben ser al menos 1.',
-            'horas_evidencia.integer' => 'Las horas de evidencia deben ser un número entero.',
-            'horas_evidencia.min' => 'Las horas de evidencia no pueden ser menores a 0.',
-        ]);
-
-        // Obtener el período
-        $periodo = Periodo::findOrFail($request->periodo_id);
-
-        // Verificar que el período esté activo
-        if ($periodo->estado !== 'Activo') {
-            return back()->withErrors(['periodo_id' => 'El período seleccionado no está activo.']);
-        }
-
-        // Verificar fecha límite del período
-        if ( $request->tipo === 'planeacion' && now()->isAfter($periodo->fecha_limite_planeacion)) {
-            return back()->withErrors(['periodo_id' => 'El período de planeación ya ha finalizado.']);
-        }
-
-        if ( $request->tipo === 'evidencia' && now()->isAfter($periodo->fecha_limite_evidencias)) {
-            return back()->withErrors(['periodo_id' => 'El período de evidencias ya ha finalizado.']);
-        }
-
-        // Verificar entregas existentes para este producto y período
-        $entregasExistentes = $producto->entregas()
-            ->where('periodo_id', $request->periodo_id)
-            ->get();
-
-        // Validar que no se exceda el límite de entregas por período
-        if ($entregasExistentes->count() >= 2) {
-            return back()->withErrors(['periodo_id' => 'Ya se han realizado las dos entregas permitidas para este período.']);
-        }
-
-        // Si es evidencia, verificar que exista una planeación previa
-        if ($request->tipo === 'evidencia') {
-            $planeacionExistente = $entregasExistentes
-                ->where('tipo', 'planeacion')
-                ->first();
-
-            if (!$planeacionExistente) {
-                return back()->withErrors(['tipo' => 'Debe realizar primero una entrega de planeación antes de entregar evidencia.']);
-            }
-        }
-
-        // Si es planeación, verificar que no exista ya una planeación
-        if ($request->tipo === 'planeacion') {
-            $planeacionExistente = $entregasExistentes
-                ->where('tipo', 'planeacion')
-                ->first();
-
-            if ($planeacionExistente) {
-                return back()->withErrors(['tipo' => 'Ya existe una entrega de planeación para este período.']);
-            }
-        }
-
-        // Validar horas disponibles del usuario en el período
-        $horasDisponibles = $this->getHorasDisponiblesUsuario(Auth::id(), $request->periodo_id);
-        $horasSolicitadas = $request->horas_planeacion;
-        
-        if ($horasSolicitadas > $horasDisponibles) {
-            return back()->withErrors(['horas_planeacion' => "No tienes suficientes horas disponibles. Tienes {$horasDisponibles} horas y solicitas {$horasSolicitadas} horas."]);
-        }
-
-        // Crear la entrega
-        $entrega = EntregaProducto::create([
-            'tipo' => $request->tipo,
-            'planeacion' => $request->planeacion,
-            'periodo_id' => $request->periodo_id,
-            'user_id' => Auth::id(),
-            'producto_investigativo_id' => $producto->id,
-            'evidencia' => null, // Por ahora será null
-            'progreso_planeacion' => $request->progreso_planeacion,
-            'progreso_evidencia' => $request->progreso_evidencia ?? 0,
-            'horas_planeacion' => $request->horas_planeacion,
-            'horas_evidencia' => $request->horas_evidencia ?? 0,
-            'estado' => 'pendiente', // Establecer estado por defecto
-        ]);
-
-        // Si es evidencia, actualizar el progreso del producto
-        if ($request->tipo === 'evidencia') {
-            $this->actualizarProgresoProducto($producto->id, $request->progreso_evidencia);
-            
-            // Verificar si el producto es de tipo formulación o su título empieza por "Formulación del Proyecto"
-            // y actualizar el estado del proyecto asociado
-            $this->verificarYActualizarEstadoProyecto($producto);
-        }
-
-        return to_route('productos.show', $producto)->with('success', 'Entrega creada exitosamente.');
+        return redirect()->route('dashboard');
     }
 
     /**
@@ -199,7 +45,7 @@ class EntregaProductoController extends Controller
     public function show(EntregaProducto $entregaProducto)
     {
         // Verificar que el usuario tenga acceso al producto
-        if (!$entregaProducto->productoInvestigativo->usuarios->contains(Auth::id())) {
+        if (!$entregaProducto->productoInvestigativo->usuarios->contains(Auth::id()) and Auth::user()->hasRole('Investigador')) {
             abort(403, 'No tienes permisos para ver esta entrega.');
         }
         return Inertia::render('Productos/Entregas/Show', [
@@ -724,7 +570,7 @@ class EntregaProductoController extends Controller
             ];
         }
 
-        return Inertia::render('Periodos/Detalle', [
+        return Inertia::render('Productos/Entregas/Detalle', [
             'producto' => $producto->load(['proyecto', 'subTipoProducto', 'usuarios']),
             'periodo' => $periodo,
             'planeacion' => $planeacion,

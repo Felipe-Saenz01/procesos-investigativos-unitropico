@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
+import Paginator from '@/components/Paginator';
 import { CircleCheckBig, CircleX, Clock, Plus, SquarePen, FileText, Download, Eye } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 
@@ -30,9 +31,15 @@ interface Investigador {
     grupo_investigacion?: GrupoInvestigacion;
 }
 
-interface InvestigadoresProps {
-    investigadores: Investigador[];
+interface PaginationLinkItem { url: string | null; label: string; active: boolean }
+interface InvestigadoresPage {
+    data: Investigador[];
+    links: PaginationLinkItem[];
+    prev_page_url?: string | null;
+    next_page_url?: string | null;
 }
+
+interface InvestigadoresProps { investigadores: InvestigadoresPage }
 
 interface PageProps {
     flash?: {
@@ -95,8 +102,8 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                 </AlertTitle>
                             </Alert>
                         }
-                        {investigadores.length === 0 && <p className='mx-5 text-gray-400'>No hay investigadores registrados.</p>}
-                        {investigadores.length > 0 &&
+                        {investigadores.data.length === 0 && <p className='mx-5 text-gray-400'>No hay investigadores registrados.</p>}
+                        {investigadores.data.length > 0 &&
                             <Table className='w-full table-auto'>
                                 <TableHeader>
                                     <TableRow>
@@ -110,7 +117,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {investigadores.map((investigador) => (
+                                    {investigadores.data.map((investigador) => (
                                         <TableRow key={investigador.id}>
                                             <TableCell className='font-medium'>{investigador.name}</TableCell>
                                             <TableCell>{investigador.email}</TableCell>
@@ -158,6 +165,7 @@ export default function InvestigadoresIndex({ investigadores }: InvestigadoresPr
                                 </TableBody>
                             </Table>
                         }
+                        <Paginator links={investigadores.links} />
                     </div>
                 </div>
             </div>

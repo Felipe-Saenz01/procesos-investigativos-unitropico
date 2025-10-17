@@ -8,6 +8,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleCheckBig, CircleX, Eye, Plus, SquarePen, Trash } from 'lucide-react';
 import { usePermissions } from '@/hooks/use-permissions';
 import { FormEvent } from 'react';
+import Paginator from '@/components/Paginator';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -35,6 +36,7 @@ interface GrupoInvestigacion {
 
 interface GrupoInvestigacionProps {
     gruposInvestigacion: GrupoInvestigacion[];
+    grupos_links?: { url: string | null; label: string; active: boolean }[];
 }
 
 interface PageProps {
@@ -49,7 +51,7 @@ interface PageProps {
     };
 }
 
-export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoInvestigacionProps) {
+export default function GrupoInvestigacionIndex({ gruposInvestigacion, grupos_links }: GrupoInvestigacionProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
     const { hasPermission } = usePermissions();
@@ -139,6 +141,7 @@ export default function GrupoInvestigacionIndex({ gruposInvestigacion }: GrupoIn
                                 </TableBody>
                             </Table>
                         }
+                        <Paginator links={grupos_links} />
                     </div>
                 </div>
             </div>

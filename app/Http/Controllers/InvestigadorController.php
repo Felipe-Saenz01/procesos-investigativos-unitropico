@@ -25,16 +25,23 @@ class InvestigadorController extends Controller
         $isLider = $user->hasRole('Lider Grupo');
         $isInvestigador = $user->hasRole('Investigador');
 
-        // Si es administrador, se muestran todos los investigadores
+        // Si es administrador, se muestran todos los investigadores (paginado)
         if ($isAdmin) {
-            $investigadores = User::with('grupo_investigacion')
+            $investigadores = User::query()
+                ->with('grupo_investigacion:id,nombre,correo')
                 ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
-                ->get();
-        // Si es lider de grupo, se muestran los investigadores de su grupo
-        } elseif ($isLider ) {
-            $investigadores = User::with('grupo_investigacion')
+                ->orderBy('id', 'desc')
+                ->paginate(10)
+                ->withQueryString();
+        // Si es líder de grupo, se muestran los investigadores de su grupo (paginado)
+        } elseif ($isLider) {
+            $investigadores = User::query()
+                ->with('grupo_investigacion:id,nombre,correo')
                 ->where('grupo_investigacion_id', $user->grupo_investigacion_id)
-                ->get();
+                ->whereIn('tipo', ['Investigador', 'Lider Grupo'])
+                ->orderBy('id', 'desc')
+                ->paginate(10)
+                ->withQueryString();
         } elseif ($isInvestigador) {
             return redirect()->route('investigadores.show', $user->id);
         // Si no es administrador ni lider de grupo, se redirige a la página de inicio

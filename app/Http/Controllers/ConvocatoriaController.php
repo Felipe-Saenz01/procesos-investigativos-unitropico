@@ -19,9 +19,12 @@ class ConvocatoriaController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $convocatorias = Convocatoria::with(['requisitos', 'postulaciones'])
+        $paginator = Convocatoria::with(['requisitos', 'postulaciones'])
             ->orderBy('fecha_inicio', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
+        $convocatorias = collect($paginator->items());
+        $convocatorias_links = $paginator->toArray()['links'] ?? [];
 
         // Filtrar según el rol del usuario
         if ($user->hasRole('Administrador')) {
@@ -50,6 +53,7 @@ class ConvocatoriaController extends Controller
 
         return Inertia::render('Convocatorias/Index', [
             'convocatorias' => $convocatorias,
+            'convocatorias_links' => $convocatorias_links,
             'user' => $user
         ]);
     }

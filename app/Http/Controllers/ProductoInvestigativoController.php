@@ -27,31 +27,41 @@ class ProductoInvestigativoController extends Controller
         // Lógica de permisos por rol
         if ($user->hasRole('Administrador')) {
             // Administrador ve todos los productos
-            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+            $paginator = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate(10)
+                ->withQueryString();
+            $productos = collect($paginator->items());
+            $productos_links = $paginator->toArray()['links'] ?? [];
         } elseif ($user->hasRole('Lider Grupo')) {
             // Líder ve productos de investigadores de su grupo
-            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+            $paginator = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
                 ->whereHas('usuarios', function ($query) use ($user) {
                     $query->whereHas('grupoInvestigacion', function ($q) use ($user) {
                         $q->where('id', $user->grupo_investigacion_id);
                     });
                 })
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate(10)
+                ->withQueryString();
+            $productos = collect($paginator->items());
+            $productos_links = $paginator->toArray()['links'] ?? [];
         } else {
             // Investigador ve solo sus productos
-            $productos = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
+            $paginator = ProductoInvestigativo::with(['proyecto', 'subTipoProducto.tipoProducto', 'usuarios'])
                 ->whereHas('usuarios', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->paginate(10)
+                ->withQueryString();
+            $productos = collect($paginator->items());
+            $productos_links = $paginator->toArray()['links'] ?? [];
         }
 
         return Inertia::render('Productos/Index', [
             'productos' => $productos,
+            'productos_links' => $productos_links ?? [],
         ]);
     }
 

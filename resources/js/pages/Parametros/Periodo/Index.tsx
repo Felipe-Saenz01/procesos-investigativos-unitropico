@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Eye, Plus, SquarePen, Trash } from 'lucide-react';
+import { CircleCheckBig, CircleX, Eye, Plus, SquarePen, Trash2 } from 'lucide-react';
 import { FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -117,7 +117,7 @@ export default function PeriodoIndex({ periodos }: PeriodoProps) {
                                                         destroy(route('parametros.periodo.destroy', periodo.id));
                                                     }
                                                 }}>
-                                                    <Button type='submit' variant='destructive' size="sm"><Trash /></Button>
+                                                    <Button type='submit' variant='destructive' size="sm"><Trash2 className="text-white" /></Button>
                                                 </form>
                                             </TableCell>
                                         </TableRow>

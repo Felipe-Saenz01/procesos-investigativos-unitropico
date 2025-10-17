@@ -162,7 +162,7 @@ export default function ProductosShow({ producto, periodos }: ProductosShowProps
                                 Editar
                             </Link>
                         </Button>
-                        <Button variant="destructive" asChild>
+                        <Button variant="destructive" size="sm" className="text-white" asChild>
                             <Link href={route('productos.destroy', producto.id)}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Eliminar

@@ -109,61 +109,61 @@ class RevisionInteligenteController extends Controller
 
 
         $iaRespuesta = null;
-        if ($texto1 && $texto2) {
-            try {
-                $prompt = "
-                Compara los siguientes dos textos que provienen de documentos de evidencia de investigación.
-                Determina el porcentaje de similitud y explica brevemente los principales cambios o avances.
-                Devuelve la respuesta en formato JSON con las claves:
-                - 'similitud' (número de porcentaje entre 0 y 100)
-                - 'analisis' (texto breve explicando los cambios)
+        // if ($texto1 && $texto2) {
+        //     try {
+        //         $prompt = "
+        //         Compara los siguientes dos textos que provienen de documentos de evidencia de investigación.
+        //         Determina el porcentaje de similitud y explica brevemente los principales cambios o avances.
+        //         Devuelve la respuesta en formato JSON con las claves:
+        //         - 'similitud' (número de porcentaje entre 0 y 100)
+        //         - 'analisis' (texto breve explicando los cambios)
 
-                Texto anterior:
-                .$texto1.
+        //         Texto anterior:
+        //         .$texto1.
 
-                Texto actual:
-                .$texto2.
-                ";
+        //         Texto actual:
+        //         .$texto2.
+        //         ";
 
-                $messages = [
-                    [
-                        'role' => 'system',
-                        'content' => 'Eres un asistente que analiza y compara documentos académicos.'
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ];
+        //         $messages = [
+        //             [
+        //                 'role' => 'system',
+        //                 'content' => 'Eres un asistente que analiza y compara documentos académicos.'
+        //             ],
+        //             [
+        //                 'role' => 'user',
+        //                 'content' => $prompt
+        //             ]
+        //         ];
 
-                // $client = OpenAI::client(env('OPENAI_API_KEY'));
-        		$result = OpenAI::chat()->create([
-                    'model' => 'gpt-5-nano',
-                    'messages' => $messages,
-                ]);
-                $iaRespuesta = $result->choices[0]->message->content ?? null;
-            } catch (\Throwable $e) {
-                $iaRespuesta = null;
-            }
-        }
+        //         // $client = OpenAI::client(env('OPENAI_API_KEY'));
+        // 		$result = OpenAI::chat()->create([
+        //             'model' => 'gpt-5-nano',
+        //             'messages' => $messages,
+        //         ]);
+        //         $iaRespuesta = json_decode($result->choices[0]->message->content ?? null);
+        //     } catch (\Throwable $e) {
+        //         $iaRespuesta = null;
+        //     }
+        // }
         $similitud = null;
-        try {
-            $embedding1 = OpenAI::embeddings()->create([
-                'model' => 'text-embedding-3-small',
-                'input' => $texto1,
-                'encoding_format' => 'float',
-            ]);
-            $embedding2 = OpenAI::embeddings()->create([
-                'model' => 'text-embedding-3-small',
-                'input' => $texto2,
-                'encoding_format' => 'float',
-            ]);
-            $cosineSimilarity = $this->cosineSimilarity($embedding1->embeddings[0]->embedding, $embedding2->embeddings[0]->embedding);
-            $similitud = round($cosineSimilarity * 100,2);
-        } catch (\Throwable $e) {
-            $embedding1 = null;
-            $embedding2 = null;
-        }
+        // try {
+        //     $embedding1 = OpenAI::embeddings()->create([
+        //         'model' => 'text-embedding-3-small',
+        //         'input' => $texto1,
+        //         'encoding_format' => 'float',
+        //     ]);
+        //     $embedding2 = OpenAI::embeddings()->create([
+        //         'model' => 'text-embedding-3-small',
+        //         'input' => $texto2,
+        //         'encoding_format' => 'float',
+        //     ]);
+        //     $cosineSimilarity = $this->cosineSimilarity($embedding1->embeddings[0]->embedding, $embedding2->embeddings[0]->embedding);
+        //     $similitud = round($cosineSimilarity * 100,2);
+        // } catch (\Throwable $e) {
+        //     $embedding1 = null;
+        //     $embedding2 = null;
+        // }
 
 
         return Inertia::render('RevisionInteligente/Comparar', [
@@ -180,7 +180,7 @@ class RevisionInteligenteController extends Controller
                 'periodo' => $e2->periodo?->nombre,
                 'texto' => $texto2,
             ],
-            'ia' => json_decode($iaRespuesta),
+            'ia' => $iaRespuesta,
             'similitud' => $similitud,
         ]);
     }
