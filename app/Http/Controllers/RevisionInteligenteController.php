@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\EntregaProducto;
 use App\Models\ProductoInvestigativo;
+use App\Models\EvidenciaSeccion;
+use App\Models\ComparacionEvidencia;
+use App\Models\ComparacionSeccion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use OpenAI\Laravel\Facades\OpenAI;
 use Smalot\PdfParser\Parser;
@@ -72,9 +76,24 @@ class RevisionInteligenteController extends Controller
             ->orderByDesc('created_at')
             ->get(['id', 'producto_investigativo_id', 'user_id', 'periodo_id', 'evidencia', 'created_at']);
 
+        // Traer comparaciones existentes entre estas evidencias
+        $evidenciaIds = $evidencias->pluck('id')->toArray();
+        $comparacionesExistentes = ComparacionEvidencia::whereIn('evidencia_1_id', $evidenciaIds)
+            ->orWhereIn('evidencia_2_id', $evidenciaIds)
+            ->with([
+                'evidencia1.usuario:id,name',
+                'evidencia1.periodo:id,nombre',
+                'evidencia2.usuario:id,name',
+                'evidencia2.periodo:id,nombre'
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+
         return Inertia::render('RevisionInteligente/SeleccionarEntregas', [
             'producto' => $producto,
             'evidencias' => $evidencias,
+            'comparaciones_existentes' => $comparacionesExistentes,
         ]);
     }
 
@@ -93,96 +112,228 @@ class RevisionInteligenteController extends Controller
         $e1 = EntregaProducto::with('usuario:id,name', 'periodo:id,nombre')->findOrFail($request->integer('e1'));
         $e2 = EntregaProducto::with('usuario:id,name', 'periodo:id,nombre')->findOrFail($request->integer('e2'));
 
-
+        // Verificar que las evidencias pertenezcan al producto
         if ($e1->producto_investigativo_id !== $producto->id || $e2->producto_investigativo_id !== $producto->id) {
             abort(403, 'Las evidencias no pertenecen al producto.');
         }
 
-        $texto1 = null;
-        $texto2 = null;
-        if ($e1->evidencia) {
-            $texto1 = $this->extraerTextoPdf(storage_path('app/public/' . $e1->evidencia));
+        // 1. Asegurar que existan secciones para ambas evidencias
+        $this->asegurarSeccionesExisten($e1);
+        $this->asegurarSeccionesExisten($e2);
+
+        // 2. Verificar si ya existe una comparación entre estas dos evidencias
+        $comparacionExistente = ComparacionEvidencia::obtenerOCrear($e1->id, $e2->id);
+
+        // Si ya existe una comparación, redirigir con alerta
+        if ($comparacionExistente->wasRecentlyCreated === false) {
+            return redirect()->route('modulo-inteligente.show', $productoId)
+                ->with('error', 'Ya existe una comparación entre estas dos evidencias.');
         }
-        if ($e2->evidencia) {
-            $texto2 = $this->extraerTextoPdf(storage_path('app/public/' . $e2->evidencia));
-        }
 
+        // 3. Redirigir a la vista de comparación
+        return redirect()->route('modulo-inteligente.comparacion.show', $comparacionExistente->id);
+    }
 
-        $iaRespuesta = null;
-        // if ($texto1 && $texto2) {
-        //     try {
-        //         $prompt = "
-        //         Compara los siguientes dos textos que provienen de documentos de evidencia de investigación.
-        //         Determina el porcentaje de similitud y explica brevemente los principales cambios o avances.
-        //         Devuelve la respuesta en formato JSON con las claves:
-        //         - 'similitud' (número de porcentaje entre 0 y 100)
-        //         - 'analisis' (texto breve explicando los cambios)
+    /**
+     * Mostrar la vista de comparación con las secciones de ambas evidencias
+     */
+    public function mostrarComparacion(int $comparacionId)
+    {
+        $comparacion = ComparacionEvidencia::with([
+            'evidencia1.usuario:id,name',
+            'evidencia1.periodo:id,nombre',
+            'evidencia1.secciones',
+            'evidencia1.productoInvestigativo.subTipoProducto:id,nombre',
+            'evidencia2.usuario:id,name', 
+            'evidencia2.periodo:id,nombre',
+            'evidencia2.secciones',
+            'comparacionesSecciones.seccion1',
+            'comparacionesSecciones.seccion2',
+            'comparacionesSecciones.elementoProducto'
+        ])->findOrFail($comparacionId);
 
-        //         Texto anterior:
-        //         .$texto1.
+        // Obtener información del producto (ambas evidencias pertenecen al mismo producto)
+        $producto = $comparacion->evidencia1->productoInvestigativo;
+        
+        // Obtener elementos del producto para el select
+        $elementosProducto = $producto->elementos()->get(['id', 'nombre']);
 
-        //         Texto actual:
-        //         .$texto2.
-        //         ";
-
-        //         $messages = [
-        //             [
-        //                 'role' => 'system',
-        //                 'content' => 'Eres un asistente que analiza y compara documentos académicos.'
-        //             ],
-        //             [
-        //                 'role' => 'user',
-        //                 'content' => $prompt
-        //             ]
-        //         ];
-
-        //         // $client = OpenAI::client(env('OPENAI_API_KEY'));
-        // 		$result = OpenAI::chat()->create([
-        //             'model' => 'gpt-5-nano',
-        //             'messages' => $messages,
-        //         ]);
-        //         $iaRespuesta = json_decode($result->choices[0]->message->content ?? null);
-        //     } catch (\Throwable $e) {
-        //         $iaRespuesta = null;
-        //     }
-        // }
-        $similitud = null;
-        // try {
-        //     $embedding1 = OpenAI::embeddings()->create([
-        //         'model' => 'text-embedding-3-small',
-        //         'input' => $texto1,
-        //         'encoding_format' => 'float',
-        //     ]);
-        //     $embedding2 = OpenAI::embeddings()->create([
-        //         'model' => 'text-embedding-3-small',
-        //         'input' => $texto2,
-        //         'encoding_format' => 'float',
-        //     ]);
-        //     $cosineSimilarity = $this->cosineSimilarity($embedding1->embeddings[0]->embedding, $embedding2->embeddings[0]->embedding);
-        //     $similitud = round($cosineSimilarity * 100,2);
-        // } catch (\Throwable $e) {
-        //     $embedding1 = null;
-        //     $embedding2 = null;
-        // }
-
-
-        return Inertia::render('RevisionInteligente/Comparar', [
-            'producto' => $producto->only(['id', 'titulo']),
-            'e1' => [
-                'id' => $e1->id,
-                'usuario' => $e1->usuario?->name,
-                'periodo' => $e1->periodo?->nombre,
-                'texto' => $texto1,
+        return Inertia::render('RevisionInteligente/ComparacionShow', [
+            'comparacion' => $comparacion,
+            'producto' => [
+                'id' => $producto->id,
+                'titulo' => $producto->titulo,
+                'sub_tipo_producto' => $producto->subTipoProducto,
             ],
-            'e2' => [
-                'id' => $e2->id,
-                'usuario' => $e2->usuario?->name,
-                'periodo' => $e2->periodo?->nombre,
-                'texto' => $texto2,
+            'evidencia1' => [
+                'id' => $comparacion->evidencia1->id,
+                'usuario' => $comparacion->evidencia1->usuario?->name,
+                'periodo' => $comparacion->evidencia1->periodo?->nombre,
+                'secciones' => $comparacion->evidencia1->secciones,
             ],
-            'ia' => $iaRespuesta,
-            'similitud' => $similitud,
+            'evidencia2' => [
+                'id' => $comparacion->evidencia2->id,
+                'usuario' => $comparacion->evidencia2->usuario?->name,
+                'periodo' => $comparacion->evidencia2->periodo?->nombre,
+                'secciones' => $comparacion->evidencia2->secciones,
+            ],
+            'comparaciones_secciones' => $comparacion->comparacionesSecciones,
+            'elementos_producto' => $elementosProducto,
         ]);
+    }
+
+    /**
+     * Comparar dos secciones específicas usando OpenAI
+     */
+    public function compararSecciones(Request $request, int $comparacionId)
+    {
+        $request->validate([
+            'seccion1_id' => 'required|integer|exists:evidencia_secciones,id',
+            'seccion2_id' => 'required|integer|exists:evidencia_secciones,id',
+            'elemento_producto_id' => 'required|integer|exists:elementos_productos,id',
+        ]);
+
+        $comparacion = ComparacionEvidencia::findOrFail($comparacionId);
+        $seccion1 = EvidenciaSeccion::findOrFail($request->seccion1_id);
+        $seccion2 = EvidenciaSeccion::findOrFail($request->seccion2_id);
+
+        // Verificar que las secciones pertenezcan a las evidencias de esta comparación
+        $evidenciaIds = [$comparacion->evidencia_1_id, $comparacion->evidencia_2_id];
+        if (!in_array($seccion1->entrega_producto_id, $evidenciaIds) || 
+            !in_array($seccion2->entrega_producto_id, $evidenciaIds)) {
+            abort(403, 'Las secciones no pertenecen a esta comparación.');
+        }
+
+        // Verificar si ya existe una comparación entre estas secciones
+        $comparacionExistente = ComparacionSeccion::obtenerOCrear(
+            $comparacionId, 
+            $seccion1->id, 
+            $seccion2->id, 
+            $request->elemento_producto_id
+        );
+
+        // Si ya existe y tiene resultados, devolver los existentes
+        if ($comparacionExistente->wasRecentlyCreated === false && 
+            $comparacionExistente->grado_similitud !== null && 
+            $comparacionExistente->resultado_similitud !== null) {
+            return redirect()->route('modulo-inteligente.comparacion.show', $comparacionId)
+                ->with('info', 'Esta comparación ya existe y ha sido realizada anteriormente');
+        }
+
+        try {
+            // Calcular similitud usando embeddings
+            $embedding1 = OpenAI::embeddings()->create([
+                'model' => 'text-embedding-3-small',
+                'input' => $seccion1->contenido,
+                'encoding_format' => 'float',
+            ]);
+            
+            $embedding2 = OpenAI::embeddings()->create([
+                'model' => 'text-embedding-3-small',
+                'input' => $seccion2->contenido,
+                'encoding_format' => 'float',
+            ]);
+
+            $cosineSimilarity = $this->cosineSimilarity(
+                $embedding1->embeddings[0]->embedding, 
+                $embedding2->embeddings[0]->embedding
+            );
+            $gradoSimilitud = round($cosineSimilarity * 100, 2);
+
+            // Obtener análisis usando chat completion con contexto de progreso
+            $progresoE1 = $comparacion->evidencia1->progreso_planeacion ?? 0;
+            $progresoE2 = $comparacion->evidencia2->progreso_planeacion ?? 0;
+            
+            $prompt = "
+            Analiza estas dos secciones de evidencias de investigación y evalúa si el progreso reportado se cumple realmente.
+
+            CONTEXTO DE PROGRESO:
+            - Evidencia 1: {$progresoE1}% de progreso reportado
+            - Evidencia 2: {$progresoE2}% de progreso reportado
+
+            SECCIONES A COMPARAR:
+            Sección 1: {$seccion1->titulo}
+            Contenido: {$seccion1->contenido}
+
+            Sección 2: {$seccion2->titulo}
+            Contenido: {$seccion2->contenido}
+
+            Responde en máximo de 350 caracteres, evaluando:
+            Si es coherente el progreso reportado de la seccion 2 con el contenido de la seccion 1
+            y cuales son las principales diferencias o avances entre las secciones
+            
+            ";
+
+            $messages = [
+                [
+                    'role' => 'system',
+                    'content' => 'Eres un evaluador de progreso académico. Proporciona análisis concisos y precisos sobre el cumplimiento de objetivos de investigación.'
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $prompt
+                ]
+            ];
+
+            $result = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => $messages,
+                'max_tokens' => 200,
+                'temperature' => 0.3,
+            ]);
+
+            $analisis = $result->choices[0]->message->content ?? 'No se pudo generar el análisis.';
+
+            // Guardar los resultados
+            $comparacionExistente->update([
+                'grado_similitud' => $gradoSimilitud,
+                'resultado_similitud' => $analisis,
+            ]);
+
+            return redirect()->route('modulo-inteligente.comparacion.show', $comparacionId)
+                ->with('success', 'Comparación de secciones realizada exitosamente');
+
+        } catch (\Throwable $e) {
+            return redirect()->route('modulo-inteligente.comparacion.show', $comparacionId)
+                ->with('error', 'Error al realizar la comparación: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recalcular secciones de las evidencias de una comparación
+     */
+    public function recalcularSecciones(Request $request, int $comparacionId)
+    {
+        $request->validate([
+            'confirmar' => 'required|boolean|accepted',
+        ]);
+
+        $comparacion = ComparacionEvidencia::with(['evidencia1', 'evidencia2'])->findOrFail($comparacionId);
+
+        try {
+            DB::beginTransaction();
+
+            // Eliminar todas las comparaciones de secciones existentes
+            ComparacionSeccion::where('comparacion_evidencia_id', $comparacionId)->delete();
+
+            // Eliminar todas las secciones de ambas evidencias
+            EvidenciaSeccion::where('entrega_producto_id', $comparacion->evidencia_1_id)->delete();
+            EvidenciaSeccion::where('entrega_producto_id', $comparacion->evidencia_2_id)->delete();
+
+            // Regenerar secciones para ambas evidencias
+            $this->asegurarSeccionesExisten($comparacion->evidencia1);
+            $this->asegurarSeccionesExisten($comparacion->evidencia2);
+
+            DB::commit();
+
+            return redirect()->route('modulo-inteligente.comparacion.show', $comparacionId)
+                ->with('success', 'Secciones recalculadas exitosamente');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->route('modulo-inteligente.comparacion.show', $comparacionId)
+                ->with('error', 'Error al recalcular secciones: ' . $e->getMessage());
+        }
     }
 
     private function extraerTextoPdf(string $rutaAbsoluta): ?string
@@ -199,6 +350,58 @@ class RevisionInteligenteController extends Controller
         }
     }
 
+    private function obtenerSeccionesTexto(string $texto): array
+    {
+        // Normalizar saltos de línea
+        $texto = preg_replace('/\r\n|\r|\n/', "\n", $texto);
+        
+        // Patrón para identificar secciones (similar al anterior pero mejorado)
+        $patron = '/(?=\n\d+\.|\n[A-ZÁÉÍÓÚÑ ]{3,}\n)/';
+        $seccionesBrutas = preg_split($patron, $texto, -1, PREG_SPLIT_NO_EMPTY);
+
+        $secciones = [];
+        foreach ($seccionesBrutas as $index => $textoSeccion) {
+            $textoSeccion = preg_replace("/^\s+/", '', $textoSeccion);
+            $textoSeccion = preg_replace("/\n{2,}/", "\n", $textoSeccion);
+            $textoSeccion = preg_replace("/([a-záéíóúñ])-\n([a-záéíóúñ])/i", "$1$2", $textoSeccion);
+
+            // Extraer título del primer fragmento (antes del primer salto de línea)
+            $lineas = explode("\n", trim($textoSeccion));
+            $titulo = '';
+            
+            if (!empty($lineas)) {
+                $primeraLinea = trim($lineas[0]);
+                
+                // Si la primera línea parece un título (empieza con número o mayúsculas)
+                if (preg_match('/^\d+\./', $primeraLinea) || preg_match('/^[A-ZÁÉÍÓÚÑ]/', $primeraLinea)) {
+                    // Limpiar el título
+                    $titulo = preg_replace('/^\d+\.\s*/', '', $primeraLinea); // Quitar numeración
+                    $titulo = trim($titulo);
+                    
+                    // Si el título está vacío después de limpiar, usar la línea original
+                    if (empty($titulo)) {
+                        $titulo = $primeraLinea;
+                    }
+                    
+                    // Limitar el título a 200 caracteres para evitar el error de base de datos
+                    $titulo = substr($titulo, 0, 200);
+                }
+            }
+            
+            // Si no se encontró un título válido, usar fallback
+            if (empty($titulo)) {
+                $titulo = "Sección " . ($index + 1);
+            }
+
+            $secciones[] = [
+                'titulo' => $titulo,
+                'texto' => trim($textoSeccion),
+            ];
+        }
+
+        return $secciones;
+    }
+
     private function cosineSimilarity(array $embedding1, array $embedding2): float
     {
         $dot = 0.0;
@@ -211,6 +414,42 @@ class RevisionInteligenteController extends Controller
             $magB += $embedding2[$i] ** 2;
         }
         return ($magA && $magB) ? $dot / (sqrt($magA) * sqrt($magB)) : 0.0;
+    }
+
+    /**
+     * Extraer y guardar secciones de una evidencia si no existen
+     */
+    private function asegurarSeccionesExisten(EntregaProducto $evidencia): void
+    {
+        // Verificar si ya existen secciones para esta evidencia
+        if ($evidencia->secciones()->exists()) {
+            return; // Ya existen secciones, no hacer nada
+        }
+
+        // Si no hay archivo de evidencia, no se pueden extraer secciones
+        if (!$evidencia->evidencia) {
+            return;
+        }
+
+        // Extraer texto del PDF
+        $rutaArchivo = storage_path('app/public/' . $evidencia->evidencia);
+        $texto = $this->extraerTextoPdf($rutaArchivo);
+
+        if (!$texto) {
+            return; // No se pudo extraer texto
+        }
+
+        // Obtener secciones del texto
+        $secciones = $this->obtenerSeccionesTexto($texto);
+
+        // Guardar secciones en la base de datos
+        foreach ($secciones as $index => $seccion) {
+            EvidenciaSeccion::create([
+                'entrega_producto_id' => $evidencia->id,
+                'titulo' => $seccion['titulo'] ?: "Sección " . ($index + 1),
+                'contenido' => $seccion['texto'],
+            ]);
+        }
     }
 
     /**

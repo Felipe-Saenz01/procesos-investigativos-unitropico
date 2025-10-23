@@ -146,6 +146,9 @@ Route::middleware(['auth.home', 'verified'])->group(function () {
     //Rutas para Módulo Revisión Inteligente
     Route::resource('modulo-inteligente', RevisionInteligenteController::class);
     Route::get('modulo-inteligente/{producto}/comparar', [RevisionInteligenteController::class, 'comparar'])->name('modulo-inteligente.comparar');
+    Route::get('modulo-inteligente/comparacion/{comparacion}', [RevisionInteligenteController::class, 'mostrarComparacion'])->name('modulo-inteligente.comparacion.show');
+    Route::post('modulo-inteligente/comparacion/{comparacion}/secciones', [RevisionInteligenteController::class, 'compararSecciones'])->name('modulo-inteligente.comparacion.secciones');
+    Route::post('modulo-inteligente/comparacion/{comparacion}/recalcular-secciones', [RevisionInteligenteController::class, 'recalcularSecciones'])->name('modulo-inteligente.comparacion.recalcular-secciones');
 
     // Rutas para Entregas de Productos
     Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');

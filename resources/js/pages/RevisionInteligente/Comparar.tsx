@@ -20,19 +20,22 @@ interface iaResponse {
     analisis: string;
 }
 
-interface EvidenciaCmp { 
-    id: number; 
-    usuario: string | null; 
-    periodo: string | null; 
-    texto: string | null 
+interface EvidenciaCmp {
+    id: number;
+    usuario: string | null;
+    periodo: string | null;
+    secciones: Array<{
+        titulo: string;
+        texto: string;
+    }>;
 }
-interface Props { 
-    producto: { 
-        id: number; 
-        titulo: string 
-    }; 
-    e1: EvidenciaCmp; 
-    e2: EvidenciaCmp; 
+interface Props {
+    producto: {
+        id: number;
+        titulo: string
+    };
+    e1: EvidenciaCmp;
+    e2: EvidenciaCmp;
     ia: iaResponse | null;
     similitud: number | null;
 }
@@ -54,22 +57,34 @@ export default function Comparar({ producto, e1, e2, ia, similitud }: Props) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Evidencia A · {e1.periodo || '—'} · {e1.usuario || '—'}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <pre className="text-sm whitespace-pre-wrap break-words max-h-[70vh] overflow-auto">{e1.texto || 'No fue posible extraer el texto del PDF.'}</pre>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Evidencia B · {e2.periodo || '—'} · {e2.usuario || '—'}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <pre className="text-sm whitespace-pre-wrap break-words max-h-[70vh] overflow-auto">{e2.texto || 'No fue posible extraer el texto del PDF.'}</pre>
-                        </CardContent>
-                    </Card>
+                    <div className="flex flex-col gap-4">
+                        <h1 className="text-base"><strong>Evidencia A:</strong> {e1.periodo || '—'} · {e1.usuario || '—'}</h1>
+                        {e1.secciones.map(seccion => (
+                            <Card key={seccion.titulo}>
+                                <CardHeader>
+                                    <CardTitle className="text-base">{seccion.titulo}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <pre className="text-sm whitespace-pre-wrap break-words max-h-[70vh] overflow-auto">{seccion.texto}</pre>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        <h1 className="text-base"><strong>Evidencia B:</strong> {e2.periodo || '—'} · {e2.usuario || '—'}</h1>
+                        {e2.secciones.map(seccion => (
+                            <Card key={seccion.titulo}>
+                                <CardHeader>
+                                    <CardTitle className="text-base">{seccion.titulo}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <pre className="text-sm whitespace-pre-wrap break-words max-h-[70vh] overflow-auto">{seccion.texto}</pre>
+                                </CardContent>
+                            </Card>
+                        ))}
+
+                    </div>
+
                 </div>
 
                 <Card>
