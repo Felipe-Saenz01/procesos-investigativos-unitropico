@@ -6,7 +6,7 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone, BrainCircuit } from 'lucide-react';
+import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone, BrainCircuit, BarChart3 } from 'lucide-react';
 import AppLogo from './app-logo';
 
 // Extender NavItem para incluir permisos requeridos
@@ -55,6 +55,15 @@ const mainNavItems: NavItemWithPermissions[] = [
         href: route('modulo-inteligente.index'),
         icon: BrainCircuit,
         // requiredPermission: 'ver-revision-inteligente',
+    }
+];
+
+const NavInformesItems: NavItemWithPermissions[] = [
+    {
+        title: 'Planes de Trabajo',
+        href: route('informes.planes-trabajo'),
+        icon: BarChart3,
+        // requiredPermission: 'ver-informes',
     }
 ];
 
@@ -156,7 +165,11 @@ export function AppSidebar() {
     
     // Filtrar elementos según permisos
     const filteredMainItems = filterItemsByPermission(mainNavItems, hasPermission);
+    const filteredInformesItems = filterItemsByPermission(NavInformesItems, hasPermission);
     const filteredParamItems = filterItemsByPermission(NavParamsItems, hasPermission);
+    
+    // Permitir ver informes si el usuario tiene al menos un permiso de informes
+    const puedeVerInformes = filteredInformesItems.length > 0;
     
     // Permitir ver parámetros si el usuario tiene al menos un permiso de parámetros
     const puedeVerParametros = filteredParamItems.length > 0;
@@ -177,6 +190,26 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={filteredMainItems} />
+                {puedeVerInformes && (
+                    <>
+                        <SidebarSeparator className='px-2 w-full' />
+                        <SidebarGroupContent className='px-2'>
+                            <SidebarGroupLabel>Informes</SidebarGroupLabel>
+                            <SidebarMenu>
+                                {filteredInformesItems.map((item) => (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton asChild isActive={isRouteActive(page.url, item.href)} tooltip={{ children: item.title }}>
+                                            <Link href={item.href} prefetch>
+                                                {item.icon && <item.icon />}
+                                                <span> {item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </>
+                )}
                 {puedeVerParametros && (
                     <>
                         <SidebarSeparator className='px-2 w-full' />

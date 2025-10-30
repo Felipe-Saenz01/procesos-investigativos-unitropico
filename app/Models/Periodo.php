@@ -32,4 +32,14 @@ class Periodo extends Model
     {
         return $this->hasMany(HorasInvestigacion::class);
     }
+
+    public function planesTrabajo(): HasMany
+    {
+        return $this->hasMany(PlanTrabajo::class);
+    }
+
+    public function informesPlanTrabajo(): HasMany
+    {
+        return $this->hasMany(InformePlanTrabajo::class);
+    }
 }

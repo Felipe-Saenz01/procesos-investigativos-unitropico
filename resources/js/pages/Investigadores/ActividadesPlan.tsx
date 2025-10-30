@@ -1,5 +1,4 @@
 import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -50,7 +49,7 @@ interface PageProps {
     };
 }
 
-export default function ActividadesPlan({ investigador, planTrabajo, actividades, actividadesInvestigacion }: ActividadesPlanProps) {
+export default function ActividadesPlan({ investigador, planTrabajo, actividades }: ActividadesPlanProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
 

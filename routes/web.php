@@ -6,6 +6,7 @@ use App\Http\Controllers\{
     EntregaProductoController,
     GrupoInvestigacionController,
     InformePlanTrabajoController,
+    InformesController,
     InvestigadorController,
     PdfController,
     PeriodoController,
@@ -149,6 +150,13 @@ Route::middleware(['auth.home', 'verified'])->group(function () {
     Route::get('modulo-inteligente/comparacion/{comparacion}', [RevisionInteligenteController::class, 'mostrarComparacion'])->name('modulo-inteligente.comparacion.show');
     Route::post('modulo-inteligente/comparacion/{comparacion}/secciones', [RevisionInteligenteController::class, 'compararSecciones'])->name('modulo-inteligente.comparacion.secciones');
     Route::post('modulo-inteligente/comparacion/{comparacion}/recalcular-secciones', [RevisionInteligenteController::class, 'recalcularSecciones'])->name('modulo-inteligente.comparacion.recalcular-secciones');
+
+    // Rutas para Informes
+    Route::prefix('informes')->name('informes.')->group(function () {
+        Route::get('grupo/{grupoId}/pdf', [InformesController::class, 'generarPdfGrupo'])->name('grupo.pdf');
+        Route::get('planes-trabajo/pdf', [InformesController::class, 'generarPdfCompleto'])->name('planes-trabajo.pdf');
+        Route::get('planes-trabajo', [InformesController::class, 'planesTrabajo'])->name('planes-trabajo');
+    });
 
     // Rutas para Entregas de Productos
     Route::get('productos/{producto}/entregas/planeacion/create', [EntregaProductoController::class, 'createPlaneacion'])->name('entregas.planeacion.create');

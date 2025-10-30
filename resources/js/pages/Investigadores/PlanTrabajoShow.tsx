@@ -99,8 +99,7 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Investigadores', href: route('investigadores.index') },
-        // { title: investigador.name, href: route('investigadores.show', investigador.id) },
-        { title: investigador.name, href: route('investigadores.index') },
+        { title: investigador.name, href: route('investigadores.show', investigador.id) },
         { title: 'Planes de Trabajo', href: route('investigadores.planes-trabajo', investigador.id) },
         { title: planTrabajo.nombre, href: '#' }
     ];
