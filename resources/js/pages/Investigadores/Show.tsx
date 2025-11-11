@@ -1,5 +1,5 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useEffect } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,7 @@ import {
     Users,
     FolderOpen,
     FileText,
-    Calendar,
-    Mail,
-    GraduationCap,
-    Award,
+	Calendar,
     TrendingUp,
     Eye
 } from 'lucide-react';
@@ -91,12 +88,29 @@ interface Props {
             estado: string;
             created_at: string;
         }>;
+        total_proyectos?: number;
+        total_productos?: number;
+        total_planes?: number;
     };
 }
 
 export default function Show({ investigador }: Props) {
-    const { hasPermission } = usePermissions();
+    const { hasPermission, hasAnyRole } = usePermissions();
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string };
+
+    useEffect(() => {
+        // toast importada dinámicamente para evitar SSR issues en algunos entornos
+        if (flash?.success || flash?.error) {
+            import('sonner').then(({ toast }) => {
+                if (flash?.success) toast.success(flash.success);
+                if (flash?.error) toast.error(flash.error);
+            });
+        }
+    }, [flash]);
     
+    // Verificar si el usuario es Administrador o Líder
+    const canAccessIndex = hasAnyRole(['Administrador', 'Líder']);
     
     const breadcrumbs = [
         { title: 'Investigadores', href: route('investigadores.index') },
@@ -118,12 +132,14 @@ export default function Show({ investigador }: Props) {
                             <h1 className='text-3xl font-bold'>{investigador.name}</h1>
                             <p className='text-gray-600 mt-1'>Perfil del Investigador</p>
                         </div>
-                        <Link href={investigador.isInvestigador ? route('dashboard') : route('investigadores.index')}>
-                            <Button variant="outline">
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Volver
-                            </Button>
-                        </Link>
+                        {canAccessIndex && (
+                            <Link href={route('investigadores.index')}>
+                                <Button variant="outline">
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    Volver
+                                </Button>
+                            </Link>
+                        )}
                     </div>
 
                     <div className='p-5 space-y-6'>
@@ -140,7 +156,6 @@ export default function Show({ investigador }: Props) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
-                                                <Mail className="h-4 w-4 text-gray-500" />
                                                 <span className="font-medium">Email:</span>
                                                 <span>{investigador.email}</span>
                                             </div>
@@ -160,14 +175,12 @@ export default function Show({ investigador }: Props) {
                                         <div className="space-y-3">
                                             {investigador.escalafon_profesoral && (
                                                 <div className="flex items-center gap-2">
-                                                    <GraduationCap className="h-4 w-4 text-gray-500" />
                                                     <span className="font-medium">Escalafón:</span>
                                                     <span>{investigador.escalafon_profesoral.nombre}</span>
                                                 </div>
                                             )}
                                             {investigador.grupo_investigacion && (
                                                 <div className="flex items-center gap-2">
-                                                    <Award className="h-4 w-4 text-gray-500" />
                                                     <span className="font-medium">Grupo:</span>
                                                     <span>{investigador.grupo_investigacion.nombre}</span>
                                                     <Badge variant="outline">{investigador.grupo_investigacion.correo}</Badge>
@@ -220,7 +233,7 @@ export default function Show({ investigador }: Props) {
                                         <FolderOpen className="h-8 w-8 text-blue-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Proyectos</p>
-                                            <p className="text-2xl font-bold">{investigador.proyectos_investigativos?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.total_proyectos ?? (investigador.proyectos_investigativos?.length ?? 0)}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -232,7 +245,7 @@ export default function Show({ investigador }: Props) {
                                         <FileText className="h-8 w-8 text-green-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Productos</p>
-                                            <p className="text-2xl font-bold">{investigador.productos_investigativos?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.total_productos ?? (investigador.productos_investigativos?.length ?? 0)}</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -256,7 +269,7 @@ export default function Show({ investigador }: Props) {
                                         <TrendingUp className="h-8 w-8 text-purple-500" />
                                         <div>
                                             <p className="text-sm text-gray-600">Planes de Trabajo</p>
-                                            <p className="text-2xl font-bold">{investigador.planes_trabajo?.length || 0}</p>
+                                            <p className="text-2xl font-bold">{investigador.total_planes ?? (investigador.planes_trabajo?.length ?? 0)}</p>
                                         </div>
                                     </div>
                                 </CardContent>

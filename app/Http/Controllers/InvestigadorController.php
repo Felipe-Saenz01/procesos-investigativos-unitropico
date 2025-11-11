@@ -56,16 +56,57 @@ class InvestigadorController extends Controller
 
     public function show(User $investigador)
     {
+        // Si es Investigador y quiere ver otro perfil, redirigir al index con mensaje
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('investigadores.index')->with('error', 'No tienes permisos para ver este perfil.');
+        }
+
+        // Cargar relaciones básicas primero
         $investigador->load([
             'grupo_investigacion',
             'escalafon_profesoral',
-            'tipoContrato',
-            'proyectosInvestigativos',
-            'productosInvestigativos.subTipoProducto.tipoProducto',
-            'horasInvestigacion.periodo',
-            'planesTrabajo'
+            'tipoContrato'
         ]);
+        
+        // Obtener totales antes de limitar para los contadores
+        $totalProyectos = $investigador->proyectosInvestigativos()->count();
+        $totalProductos = $investigador->productosInvestigativos()->count();
+        $totalPlanes = $investigador->planesTrabajo()->count();
+        
+        // Para relaciones many-to-many, usar orderByRaw para evitar ambigüedad
+        // con created_at entre la tabla principal y la tabla pivot
+        $proyectos = $investigador->proyectosInvestigativos()
+            ->orderByRaw('proyecto_investigativos.created_at DESC')
+            ->take(5)
+            ->get();
+        $investigador->setRelation('proyectosInvestigativos', $proyectos);
+        
+        $productos = $investigador->productosInvestigativos()
+            ->orderByRaw('producto_investigativos.created_at DESC')
+            ->take(5)
+            ->get();
+        $investigador->setRelation('productosInvestigativos', $productos);
+        
+        // Para relaciones hasMany, podemos usar load normalmente
+        $investigador->load([
+            'horasInvestigacion' => function ($query) {
+                $query->with('periodo')->latest()->take(5);
+            },
+            'planesTrabajo' => function ($query) {
+                $query->latest()->take(5);
+            }
+        ]);
+        
+        // Cargar la relación anidada de productosInvestigativos después de limitar
+        $investigador->load('productosInvestigativos.subTipoProducto.tipoProducto');
+        
         $investigador->isInvestigador = $investigador->hasRole('Investigador');
+        
+        // Agregar propiedades adicionales para los contadores
+        $investigador->total_proyectos = $totalProyectos;
+        $investigador->total_productos = $totalProductos;
+        $investigador->total_planes = $totalPlanes;
 
 
         return inertia('Investigadores/Show', [
@@ -181,6 +222,12 @@ class InvestigadorController extends Controller
     // --- Métodos de Horas de Investigación ---
     public function horas(User $investigador)
     {
+        // Si es Investigador y no es su propio registro, redirigir al dashboard con mensaje
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para acceder a las horas de este investigador.');
+        }
+
         if (!$investigador->escalafon_profesoral) {
             return to_route('investigadores.show', $investigador->id)->with('error', 'Este investigador no tiene un escalafón profesoral asignado');
         }
@@ -276,6 +323,12 @@ class InvestigadorController extends Controller
     // --- Métodos de Planes de Trabajo ---
     public function planesTrabajo(User $investigador)
     {
+        // Si es Investigador y no es su propio registro, redirigir al dashboard con mensaje
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para acceder a los planes de trabajo de este investigador.');
+        }
+
         $planes = $investigador->planesTrabajo()->with('actividades.actividadInvestigacion')->get();
         return inertia('Investigadores/PlanesTrabajo', [
             'investigador' => $investigador,
@@ -285,6 +338,11 @@ class InvestigadorController extends Controller
 
     public function createPlanTrabajo(User $investigador)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para crear planes de trabajo de este investigador.');
+        }
+
         $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
         return inertia('Investigadores/PlanTrabajoCreate', [
             'investigador' => $investigador,
@@ -294,6 +352,11 @@ class InvestigadorController extends Controller
 
     public function storePlanTrabajo(Request $request, User $investigador)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para crear planes de trabajo de este investigador.');
+        }
+
         $request->validate([
             'nombre' => 'required|string|max:255',
             'vigencia' => 'required|in:Anual,Semestral',
@@ -312,6 +375,11 @@ class InvestigadorController extends Controller
 
     public function editPlanTrabajo(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para editar planes de trabajo de este investigador.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
         return inertia('Investigadores/PlanTrabajoEdit', [
@@ -323,6 +391,11 @@ class InvestigadorController extends Controller
 
     public function updatePlanTrabajo(Request $request, User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para actualizar planes de trabajo de este investigador.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $request->validate([
             'nombre' => 'required|string|max:255',
@@ -342,6 +415,11 @@ class InvestigadorController extends Controller
 
     public function destroyPlanTrabajo(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para eliminar planes de trabajo de este investigador.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $planTrabajo->delete();
         
@@ -353,6 +431,11 @@ class InvestigadorController extends Controller
      */
     public function terminarPlanTrabajo(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para terminar planes de trabajo de este investigador.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         
         // Verificar permisos: solo líderes y administradores pueden terminar planes
@@ -375,6 +458,11 @@ class InvestigadorController extends Controller
 
     public function showPlanTrabajo(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para ver planes de trabajo de este investigador.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()
             ->with(['actividades.actividadInvestigacion', 'revisiones.revisor', 'informes.evidencias.actividadPlan.actividadInvestigacion'])
             ->findOrFail($planTrabajoId);
@@ -515,6 +603,11 @@ class InvestigadorController extends Controller
     // --- Métodos de Actividades del Plan ---
     public function actividadesPlan(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para ver las actividades de este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $actividades = $planTrabajo->actividades()->with('actividadInvestigacion')->get();
         $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
@@ -529,6 +622,11 @@ class InvestigadorController extends Controller
 
     public function createActividadPlan(User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para crear actividades en este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
         
@@ -541,6 +639,11 @@ class InvestigadorController extends Controller
 
     public function storeActividadPlan(Request $request, User $investigador, $planTrabajoId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para crear actividades en este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         
         $request->validate([
@@ -567,6 +670,11 @@ class InvestigadorController extends Controller
 
     public function editActividadPlan(User $investigador, $planTrabajoId, $actividadPlanId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para editar actividades en este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
         $actividadesInvestigacion = ActividadesInvestigacion::all(['id', 'nombre']);
@@ -581,6 +689,11 @@ class InvestigadorController extends Controller
 
     public function updateActividadPlan(Request $request, User $investigador, $planTrabajoId, $actividadPlanId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para actualizar actividades en este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
         
@@ -608,6 +721,11 @@ class InvestigadorController extends Controller
 
     public function destroyActividadPlan(User $investigador, $planTrabajoId, $actividadPlanId)
     {
+        $auth = Auth::user();
+        if ($auth && $auth->hasRole('Investigador') && $auth->id !== $investigador->id) {
+            return to_route('dashboard')->with('error', 'No tienes permisos para eliminar actividades en este plan.');
+        }
+
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
         $actividad = $planTrabajo->actividades()->findOrFail($actividadPlanId);
         $actividad->delete();

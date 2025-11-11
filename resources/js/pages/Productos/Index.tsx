@@ -8,6 +8,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Eye, Plus, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import Paginator from '@/components/Paginator';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -57,6 +58,7 @@ interface ProductosIndexProps {
 export default function ProductosIndex({ productos, productos_links }: ProductosIndexProps) {
     const { props } = usePage();
     const flash = props.flash as { success?: string; error?: string };
+    const { hasPermission } = usePermissions();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -84,12 +86,14 @@ export default function ProductosIndex({ productos, productos_links }: Productos
                                     <FileText className="h-6 w-6" />
                                     Productos Investigativos
                                 </CardTitle>
-                                <Button asChild>
-                                    <Link href={route('productos.create')}>
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Crear Producto
-                                    </Link>
-                                </Button>
+                                {hasPermission('crear-producto') && (
+                                    <Button asChild>
+                                        <Link href={route('productos.create')}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Crear Producto
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -155,12 +159,14 @@ export default function ProductosIndex({ productos, productos_links }: Productos
                                 <div className="text-center py-8">
                                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                     <p className="text-gray-500 mb-4">No hay productos investigativos registrados</p>
-                                    <Button asChild>
-                                        <Link href={route('productos.create')}>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Crear Primer Producto
-                                        </Link>
-                                    </Button>
+                                    {hasPermission('crear-producto') && (
+                                        <Button asChild>
+                                            <Link href={route('productos.create')}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Crear Primer Producto
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                             <Paginator links={productos_links} />

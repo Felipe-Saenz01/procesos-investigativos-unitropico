@@ -8,9 +8,10 @@ import { SearchSelect } from '@/components/form-search-select';
 import { Slider } from '@/components/ui/slider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
-import { FormEvent } from 'react';
+import { FormEvent, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface Investigador {
     id: number;
@@ -46,6 +47,25 @@ export default function ActividadPlanCreate({ investigador, planTrabajo, activid
         total_horas: '',
         porcentaje_progreso: 0
     });
+    
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    
+    // Mostrar notificaciones toast cuando hay flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
+    
+    // Mostrar toast cuando hay errores de validación
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            toast.error('Por favor corrige los errores en el formulario');
+        }
+    }, [errors]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();

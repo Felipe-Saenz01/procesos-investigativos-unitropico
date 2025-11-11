@@ -1,11 +1,11 @@
-import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Plus, SquarePen, Trash, ArrowLeft } from 'lucide-react';
-import { FormEvent } from 'react';
+import { Plus, SquarePen, Trash, ArrowLeft } from 'lucide-react';
+import { FormEvent, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface ActividadInvestigacion {
     id: number;
@@ -52,6 +52,15 @@ interface PageProps {
 export default function ActividadesPlan({ investigador, planTrabajo, actividades }: ActividadesPlanProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
+    
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -99,22 +108,6 @@ export default function ActividadesPlan({ investigador, planTrabajo, actividades
                         </div>
                     </div>
                     <div className='p-5'>
-                        {flash?.success &&
-                            <Alert variant='default' className='mb-3 my-5'>
-                                <CircleCheckBig />
-                                <AlertTitle>
-                                    {flash.success}
-                                </AlertTitle>
-                            </Alert>
-                        }
-                        {flash?.error &&
-                            <Alert variant='destructive' className='mb-3 my-5'>
-                                <CircleX />
-                                <AlertTitle>
-                                    {flash.error}
-                                </AlertTitle>
-                            </Alert>
-                        }
                         {actividades.length === 0 && <p className='mx-5 text-gray-400'>No hay actividades registradas en este plan.</p>}
                         {actividades.length > 0 &&
                             <Table className='table-auto'>

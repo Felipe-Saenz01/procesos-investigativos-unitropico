@@ -226,9 +226,9 @@ class ProyectoInvestigativoController extends Controller
      */
     public function show(ProyectoInvestigativo $proyecto)
     {
-        // Verificar que el usuario solo pueda ver proyectos donde esté asociado
-        if (!$proyecto->usuarios->contains(Auth::id()) && Auth::user()->hasRole('Investigador')) {
-            abort(403, 'No tienes permisos para ver este proyecto.');
+        // Verificación de acceso: Investigador solo si está relacionado
+        if (Auth::user()->hasRole('Investigador') && !$proyecto->usuarios->contains(Auth::id())) {
+            return to_route('proyectos.index')->with('error', 'No tienes permisos para ver este proyecto.');
         }
 
         return Inertia::render('Proyectos/Show', [

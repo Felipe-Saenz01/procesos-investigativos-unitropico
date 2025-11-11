@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -96,6 +97,18 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
 
     // Usar el hook de permisos
     const { hasPermission, hasRole, user } = usePermissions();
+    
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    
+    // Mostrar notificaciones toast cuando hay flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Investigadores', href: route('investigadores.index') },

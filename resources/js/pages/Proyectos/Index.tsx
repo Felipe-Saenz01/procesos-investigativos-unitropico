@@ -8,6 +8,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleCheckBig, CircleX, Eye, Plus, SquarePen, Trash } from 'lucide-react';
 import { FormEvent } from 'react';
+import { usePermissions } from '@/hooks/use-permissions';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -58,6 +59,7 @@ interface PageProps {
 export default function ProyectosIndex({ proyectos, proyectos_links, user_permissions, user_id }: ProyectosProps) {
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
+    const { hasPermission } = usePermissions();
 
     const getEstadoBadge = (estado: string) => {
         if (estado === 'Formulado') {
@@ -103,11 +105,16 @@ export default function ProyectosIndex({ proyectos, proyectos_links, user_permis
             <Head title="Proyectos Investigativos" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="relative min-h-[100vh] flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border">
-                    <div className='flex flex-row items-center'>
+                    <div className='flex flex-row items-center justify-between p-5'>
                         <h1 className='text-2xl font-bold m-5'>Proyectos Investigativos</h1>
-                        <Link href={route('proyectos.create')} prefetch>
-                            <Button><Plus /></Button>
-                        </Link>
+                        {hasPermission('crear-proyecto') && (
+                            <Button asChild>
+                                <Link href={route('proyectos.create')} prefetch>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Crear Proyecto
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                     <div className='p-5'>
                         {flash?.success &&

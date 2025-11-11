@@ -8,9 +8,10 @@ import { SearchSelect } from '@/components/form-search-select';
 import { Slider } from '@/components/ui/slider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
-import { FormEvent } from 'react';
+import { FormEvent, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface Investigador {
     id: number;
@@ -58,6 +59,25 @@ export default function ActividadPlanEdit({ investigador, planTrabajo, actividad
         total_horas: actividad.total_horas,
         porcentaje_progreso: actividad.porcentaje_progreso
     });
+    
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    
+    // Mostrar notificaciones toast cuando hay flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
+    
+    // Mostrar toast cuando hay errores de validación
+    useEffect(() => {
+        if (Object.keys(errors).length > 0) {
+            toast.error('Por favor corrige los errores en el formulario');
+        }
+    }, [errors]);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -125,7 +145,7 @@ export default function ActividadPlanEdit({ investigador, planTrabajo, actividad
                                     <SearchSelect
                                         options={actividadOptions}
                                         value={data.actividad_investigacion_id}
-                                        onValueChange={(value) => setData('actividad_investigacion_id', String(value))}
+                                        onValueChange={(value) => setData('actividad_investigacion_id', Number(value))}
                                         placeholder="Seleccionar actividad..."
                                         name="actividad_investigacion_id"
                                     />
@@ -165,7 +185,7 @@ export default function ActividadPlanEdit({ investigador, planTrabajo, actividad
                                         id='horas_semana'
                                         className="mt-1"
                                         value={data.horas_semana}
-                                        onChange={(e) => setData('horas_semana', e.target.value)}
+                                        onChange={(e) => setData('horas_semana', Number(e.target.value))}
                                         type='number'
                                         name='horas_semana'
                                         placeholder="0"
@@ -178,7 +198,7 @@ export default function ActividadPlanEdit({ investigador, planTrabajo, actividad
                                         id='total_horas'
                                         className="mt-1"
                                         value={data.total_horas}
-                                        onChange={(e) => setData('total_horas', e.target.value)}
+                                        onChange={(e) => setData('total_horas', Number(e.target.value))}
                                         type='number'
                                         name='total_horas'
                                         placeholder="0"

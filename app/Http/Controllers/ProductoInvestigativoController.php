@@ -174,8 +174,8 @@ class ProductoInvestigativoController extends Controller
     public function show(ProductoInvestigativo $producto)
     {
         $user = Auth::user();
-        if (!$producto->usuarios->contains($user->id) and $user->hasRole('Investigador')) {
-            abort(403, 'No tienes permisos para ver este producto.');
+        if ($user->hasRole('Investigador') && !$producto->usuarios->contains($user->id)) {
+            return to_route('productos.index')->with('error', 'No tienes permisos para ver este producto.');
         }
 
         // Traer todos los periodos activos y los periodos en los que ya hay entregas para el producto

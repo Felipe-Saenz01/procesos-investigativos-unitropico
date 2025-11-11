@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Head, Link } from '@inertiajs/react'
+import { Badge } from '@/components/ui/badge'
+import { usePermissions } from '@/hooks/use-permissions'
 
 interface Usuario {
     id: number;
@@ -29,6 +31,17 @@ interface Props {
 }
 
 export default function GrupoInvestigacionShow({ grupoInvestigacion }: Props) {
+	const { hasAnyRole } = usePermissions();
+	const isInvestigador = hasAnyRole(['Investigador']);
+	const mostrarAcciones = !isInvestigador;
+
+	const getRoleBadge = (tipo: string) => {
+		if (tipo === 'Lider Grupo') {
+			return <Badge variant="default" className="bg-orange-500 hover:bg-orange-600">Líder Grupo</Badge>;
+		}
+		return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Investigador</Badge>;
+	};
+
     return (
         <AppLayout breadcrumbs={[
             { title: 'Grupos de Investigación', href: route('grupo-investigacion.index') },
@@ -36,8 +49,7 @@ export default function GrupoInvestigacionShow({ grupoInvestigacion }: Props) {
         ]}>
             <Head title={`Grupo: ${grupoInvestigacion.nombre}`} />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <div className="relative flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border p-5">
-                    <div className="space-y-6">
+                <div className="space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-2xl">{grupoInvestigacion.nombre}</CardTitle>
@@ -95,31 +107,36 @@ export default function GrupoInvestigacionShow({ grupoInvestigacion }: Props) {
                                         <TableRow>
                                             <TableHead>Nombre</TableHead>
                                             <TableHead>Correo</TableHead>
-                                            <TableHead className="text-right">Acciones</TableHead>
+											<TableHead>Tipo</TableHead>
+											{mostrarAcciones && <TableHead className="text-right">Acciones</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {(grupoInvestigacion.usuarios || []).length === 0 && (
                                             <TableRow>
-                                                <TableCell colSpan={3} className="text-center text-sm text-gray-500">Sin investigadores asignados</TableCell>
+												<TableCell colSpan={mostrarAcciones ? 4 : 3} className="text-center text-sm text-gray-500">Sin investigadores asignados</TableCell>
                                             </TableRow>
                                         )}
                                         {(grupoInvestigacion.usuarios || []).map(usuario => (
                                             <TableRow key={usuario.id}>
                                                 <TableCell className="whitespace-normal break-words">{usuario.name}</TableCell>
                                                 <TableCell className="whitespace-normal break-words">{usuario.email}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <Link href={route('investigadores.show', usuario.id)}>
-                                                        <Button size="sm" variant="outline">Ver</Button>
-                                                    </Link>
-                                                </TableCell>
+												<TableCell>
+													{getRoleBadge(usuario.tipo)}
+												</TableCell>
+												{mostrarAcciones && (
+													<TableCell className="text-right">
+														<Link href={route('investigadores.show', usuario.id)}>
+															<Button size="sm" variant="outline">Ver</Button>
+														</Link>
+													</TableCell>
+												)}
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
                             </CardContent>
                         </Card>
-                    </div>
                 </div>
             </div>
         </AppLayout>

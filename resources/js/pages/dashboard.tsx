@@ -1,6 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
@@ -68,6 +69,18 @@ const chartConfig = {
 };
 
 export default function Dashboard() {
+    const { props } = usePage();
+    const flash = props.flash as { success?: string; error?: string };
+
+    useEffect(() => {
+        if (flash?.success || flash?.error) {
+            import('sonner').then(({ toast }) => {
+                if (flash?.success) toast.success(flash.success);
+                if (flash?.error) toast.error(flash.error);
+            });
+        }
+    }, [flash]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />

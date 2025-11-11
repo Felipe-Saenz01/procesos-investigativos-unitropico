@@ -13,8 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-    BarChart, 
-    Bar, 
     XAxis, 
     YAxis, 
     CartesianGrid, 
@@ -24,8 +22,7 @@ import {
     AreaChart,
     Area,
     PieChart,
-    Pie,
-    Legend
+    Pie
 } from 'recharts';
 import { 
     FileText, 
@@ -34,8 +31,9 @@ import {
     Target,
     Download
 } from 'lucide-react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 interface PlanesTrabajoProps {
     estadisticas: {
@@ -129,6 +127,17 @@ export default function PlanesTrabajo({
     top_investigadores_actividades,
     rendimiento_por_grupo_investigador
 }: PlanesTrabajoProps) {
+    const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
+    
+    // Mostrar notificaciones toast cuando hay flash messages
+    React.useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
     
     // Validar que rendimiento_por_grupo_investigador sea un array
     const gruposInvestigadorData = Array.isArray(rendimiento_por_grupo_investigador) 
@@ -451,7 +460,11 @@ export default function PlanesTrabajo({
                                             ? Object.values(grupoData.investigadores)
                                             : [];
                                     
-                                    const investigadoresArrayTyped = investigadoresArray as any[];
+                                    const investigadoresArrayTyped = investigadoresArray as Array<{
+                                        user_id: number;
+                                        user_name: string;
+                                        rendimiento_por_periodo: number[];
+                                    }>;
                                     
                                     // Validar que periodos sea un array antes de usar .map()
                                     // Si es un objeto, convertirlo a array
@@ -483,7 +496,7 @@ export default function PlanesTrabajo({
                                         const datosPeriodo: { periodo: string; [key: string]: string | number } = { periodo: periodo };
                                         
                                         if (Array.isArray(investigadoresArrayTyped)) {
-                                            investigadoresArrayTyped.forEach((inv: any) => {
+                                            investigadoresArrayTyped.forEach((inv: { user_name: string; rendimiento_por_periodo: number[] }) => {
                                                 datosPeriodo[inv.user_name] = (inv.rendimiento_por_periodo && inv.rendimiento_por_periodo[index]) ? inv.rendimiento_por_periodo[index] : 0;
                                             });
                                         }
@@ -496,7 +509,7 @@ export default function PlanesTrabajo({
                                             <ResponsiveContainer width="100%" height={400}>
                                                 <AreaChart data={datosGrafico}>
                                                     <defs>
-                                                        {investigadoresArrayTyped.map((investigador: any, index: number) => {
+                                                        {investigadoresArrayTyped.map((investigador: { user_name: string; rendimiento_por_periodo: number[] }, index: number) => {
                                                             const uniqueId = `fill-investigador-${grupoIndex}-${index}`;
                                                             return (
                                                             <linearGradient key={uniqueId} id={uniqueId} x1="0" y1="0" x2="0" y2="1">
@@ -518,11 +531,11 @@ export default function PlanesTrabajo({
                                                     <XAxis dataKey="periodo" />
                                                     <YAxis domain={[0, 100]} />
                                                     <Tooltip />
-                                                    {investigadoresArrayTyped.map((investigador: any, index: number) => {
+                                                    {investigadoresArrayTyped.map((investigador: { user_name: string; rendimiento_por_periodo: number[] }, index: number) => {
                                                         const uniqueId = `fill-investigador-${grupoIndex}-${index}`;
                                                         return (
                                                         <Area
-                                                            key={investigador.user_id || `area-${grupoIndex}-${index}`}
+                                                            key={investigador.user_name || `area-${grupoIndex}-${index}`}
                                                             type="monotone"
                                                             dataKey={investigador.user_name}
                                                             stroke={coloresGrupos[index % coloresGrupos.length]}
@@ -539,12 +552,12 @@ export default function PlanesTrabajo({
                                             
                                             {/* Leyenda personalizada */}
                                             <div className="flex flex-wrap justify-center gap-4 mt-4">
-                                                {investigadoresArrayTyped.map((investigador: any, index: number) => {
+                                                {investigadoresArrayTyped.map((investigador: { user_name: string; rendimiento_por_periodo: number[] }, index: number) => {
                                                     const promedioRendimiento = investigador.rendimiento_por_periodo && investigador.rendimiento_por_periodo.length > 0 
-                                                        ? (investigador.rendimiento_por_periodo.reduce((a: any, b: any) => a + b, 0) / investigador.rendimiento_por_periodo.length).toFixed(1)
+                                                        ? (investigador.rendimiento_por_periodo.reduce((a: number, b: number) => a + b, 0) / investigador.rendimiento_por_periodo.length).toFixed(1)
                                                         : '0';
                                                     return (
-                                                        <div key={investigador.user_id} className="flex items-center gap-2">
+                                                        <div key={investigador.user_name} className="flex items-center gap-2">
                                                             <div 
                                                                 className="w-3 h-3 rounded-full" 
                                                                 style={{ backgroundColor: coloresGrupos[index % coloresGrupos.length] }}

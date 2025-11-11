@@ -1,14 +1,15 @@
 import { EstadoBadge } from '@/components/EstadoBadge';
-import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { CircleCheckBig, CircleX, Plus, SquarePen, Trash, List, ArrowLeft } from 'lucide-react';
-import { FormEvent } from 'react';
+import { Plus, SquarePen, Trash, List, ArrowLeft } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { usePermissions } from '@/hooks/use-permissions';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface ActividadInvestigacion {
     id: number;
@@ -55,6 +56,30 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
     const { delete: destroy } = useForm();
     const { flash } = usePage().props as PageProps;
     const { hasPermission } = usePermissions();
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [planIdToDelete, setPlanIdToDelete] = useState<number | null>(null);
+    
+    // Mostrar notificaciones toast cuando hay flash messages
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
+    
+    const handleRequestDelete = (planId: number) => {
+        setPlanIdToDelete(planId);
+        setDeleteDialogOpen(true);
+    };
+    
+    const confirmDelete = () => {
+        if (planIdToDelete) {
+            destroy(route('investigadores.planes-trabajo.destroy', [investigador.id, planIdToDelete]));
+            setPlanIdToDelete(null);
+        }
+    };
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Investigadores',
@@ -87,28 +112,14 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                                     Volver
                                 </Button>
                             </Link>
-                            <Link href={route('investigadores.planes-trabajo.create', investigador.id)} prefetch>
-                                <Button className="ml-4"><Plus /> Nuevo Plan</Button>
-                            </Link>
+                            {hasPermission('crear-planes-trabajo') && (
+                                <Link href={route('investigadores.planes-trabajo.create', investigador.id)} prefetch>
+                                    <Button className="ml-4"><Plus /> Nuevo Plan</Button>
+                                </Link>
+                            )}
                         </div>
                     </div>
                     <div className='p-5'>
-                        {flash?.success &&
-                            <Alert variant='default' className='mb-3 my-5'>
-                                <CircleCheckBig />
-                                <AlertTitle>
-                                    {flash.success}
-                                </AlertTitle>
-                            </Alert>
-                        }
-                        {flash?.error &&
-                            <Alert variant='destructive' className='mb-3 my-5'>
-                                <CircleX />
-                                <AlertTitle>
-                                    {flash.error}
-                                </AlertTitle>
-                            </Alert>
-                        }
                         {planesTrabajo.length === 0 && <p className='mx-5 text-gray-400'>No hay planes de trabajo registrados.</p>}
                         {planesTrabajo.length > 0 &&
                             <Table className='table-auto'>
@@ -147,16 +158,15 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                                                                 <SquarePen className="h-4 w-4" />
                                                             </Button>
                                                         </Link>
-                                                        <form onSubmit={(e: FormEvent) => {
-                                                            e.preventDefault();
-                                                            if (confirm('¿Estás seguro de que deseas eliminar este plan de trabajo?')) {
-                                                                destroy(route('investigadores.planes-trabajo.destroy', [investigador.id, plan.id]));
-                                                            }
-                                                        }}>
-                                                            <Button type='submit' variant='destructive' size="sm" title="Eliminar plan de trabajo">
-                                                                <Trash className="h-4 w-4" />
-                                                            </Button>
-                                                        </form>
+                                                        <Button 
+                                                            type='button'
+                                                            variant='destructive' 
+                                                            size="sm" 
+                                                            title="Eliminar plan de trabajo"
+                                                            onClick={() => handleRequestDelete(plan.id)}
+                                                        >
+                                                            <Trash className="h-4 w-4" />
+                                                        </Button>
                                                     </>
                                                 )}
                                             </TableCell>
@@ -168,6 +178,18 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                     </div>
                 </div>
             </div>
+            
+            {/* Diálogo de confirmación de eliminación */}
+            <ConfirmDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Eliminar Plan de Trabajo"
+                description="¿Estás seguro de que deseas eliminar este plan de trabajo? Esta acción es irreversible."
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                confirmVariant="destructive"
+                onConfirm={confirmDelete}
+            />
         </AppLayout>
     );
 } 
