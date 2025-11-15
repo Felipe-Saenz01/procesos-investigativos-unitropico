@@ -35,7 +35,12 @@ class Periodo extends Model
 
     public function planesTrabajo(): HasMany
     {
-        return $this->hasMany(PlanTrabajo::class);
+        return $this->hasMany(PlanTrabajo::class, 'periodo_inicio_id');
+    }
+
+    public function planesTrabajoFin(): HasMany
+    {
+        return $this->hasMany(PlanTrabajo::class, 'periodo_fin_id');
     }
 
     public function informesPlanTrabajo(): HasMany

@@ -219,7 +219,7 @@ class InformesController extends Controller
             ->get();
         
         // Planes de trabajo recientes
-        $planesRecientes = PlanTrabajo::with(['user', 'periodo'])
+        $planesRecientes = PlanTrabajo::with(['user', 'periodoInicio', 'periodoFin'])
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get();
@@ -317,7 +317,7 @@ class InformesController extends Controller
                 $planesEnPeriodo = $planesInvestigador->filter(function($plan) use ($periodoNombre, $periodosUnificados) {
                     // Buscar el período por nombre
                     $periodo = $periodosUnificados->where('nombre', $periodoNombre)->first();
-                    return $periodo && $plan->periodo_id == $periodo->id;
+                    return $periodo && $plan->periodo_inicio_id == $periodo->id;
                 });
                 
                 if ($planesEnPeriodo->count() > 0) {
@@ -507,7 +507,7 @@ class InformesController extends Controller
                         
                         if ($periodo) {
                             $planesEnPeriodo = $planesInvestigador->filter(function($plan) use ($periodo) {
-                                return $plan->periodo_id == $periodo->id;
+                                return $plan->periodo_inicio_id == $periodo->id;
                             });
 
                             if ($planesEnPeriodo->count() > 0) {

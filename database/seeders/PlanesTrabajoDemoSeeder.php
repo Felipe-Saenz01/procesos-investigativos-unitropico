@@ -78,15 +78,21 @@ class PlanesTrabajoDemoSeeder extends Seeder
             foreach ($investigadores as $investigador) {
                 foreach ($periodos as $periodo) {
                     // Crear un plan por investigador y período si no existe
-                    $plan = PlanTrabajo::firstOrCreate(
+                    $vigencia = in_array($periodo->nombre, ['2025-A', '2025-B']) ? 'Semestral' : 'Anual';
+                    $periodoFin = $vigencia === 'Semestral'
+                        ? $periodo
+                        : $this->obtenerPeriodoSiguiente($periodo);
+
+                    $plan = PlanTrabajo::updateOrCreate(
                         [
                             'user_id' => $investigador->id,
-                            'periodo_id' => $periodo->id,
+                            'periodo_inicio_id' => $periodo->id,
                             'nombre' => 'Plan de Trabajo ' . $periodo->nombre . ' - ' . $investigador->name,
                         ],
                         [
-                            'vigencia' => in_array($periodo->nombre, ['2025-A', '2025-B']) ? 'Semestral' : 'Anual',
+                            'vigencia' => $vigencia,
                             'estado' => 'Aprobado',
+                            'periodo_fin_id' => $periodoFin->id,
                         ]
                     );
 
@@ -155,6 +161,54 @@ class PlanesTrabajoDemoSeeder extends Seeder
             Log::error('PlanesTrabajoDemoSeeder error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             throw $e;
         }
+    }
+
+    private function obtenerPeriodoSiguiente(Periodo $periodo): Periodo
+    {
+        $coincidencia = [];
+        if (!preg_match('/^(?P<year>\d{4})-(?P<label>A|B)$/', $periodo->nombre, $coincidencia)) {
+            return $periodo;
+        }
+
+        $year = (int) $coincidencia['year'];
+        $label = $coincidencia['label'];
+
+        if ($label === 'A') {
+            $targetYear = $year;
+            $targetLabel = 'B';
+        } else {
+            $targetYear = $year + 1;
+            $targetLabel = 'A';
+        }
+
+        $nombreObjetivo = sprintf('%d-%s', $targetYear, $targetLabel);
+
+        $periodoExistente = Periodo::where('nombre', $nombreObjetivo)->first();
+        if ($periodoExistente) {
+            return $periodoExistente;
+        }
+
+        $planeacionBase = $periodo->fecha_limite_planeacion instanceof \Carbon\Carbon
+            ? $periodo->fecha_limite_planeacion->copy()
+            : ($periodo->fecha_limite_planeacion ? \Carbon\Carbon::parse($periodo->fecha_limite_planeacion) : now());
+
+        $evidenciasBase = $periodo->fecha_limite_evidencias instanceof \Carbon\Carbon
+            ? $periodo->fecha_limite_evidencias->copy()
+            : ($periodo->fecha_limite_evidencias ? \Carbon\Carbon::parse($periodo->fecha_limite_evidencias) : $planeacionBase->copy()->addMonths(3));
+
+        $planeacionNueva = $planeacionBase->copy()->addMonths(6);
+        $evidenciasNueva = $evidenciasBase->copy()->addMonths(6);
+
+        if ($evidenciasNueva->lessThanOrEqualTo($planeacionNueva)) {
+            $evidenciasNueva = $planeacionNueva->copy()->addWeeks(2);
+        }
+
+        return Periodo::create([
+            'nombre' => $nombreObjetivo,
+            'fecha_limite_planeacion' => $planeacionNueva,
+            'fecha_limite_evidencias' => $evidenciasNueva,
+            'estado' => 'Activo',
+        ]);
     }
 }
 

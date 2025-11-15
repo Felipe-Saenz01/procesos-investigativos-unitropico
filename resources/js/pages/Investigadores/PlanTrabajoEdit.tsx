@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { CircleAlert } from 'lucide-react';
-import { FormEvent, useEffect } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Investigador {
@@ -21,6 +21,9 @@ interface Investigador {
 interface Periodo {
     id: number;
     nombre: string;
+    estado: string;
+    fecha_limite_planeacion?: string;
+    fecha_limite_evidencias?: string;
 }
 
 interface PlanTrabajo {
@@ -28,7 +31,10 @@ interface PlanTrabajo {
     nombre: string;
     vigencia: string;
     estado: string;
-    periodo_id?: number;
+    periodo_inicio_id?: number;
+    periodo_fin_id?: number | null;
+    periodo_inicio?: Periodo;
+    periodo_fin?: Periodo | null;
 }
 
 interface EditProps {
@@ -42,9 +48,19 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo, periodos }:
         id: planTrabajo.id,
         nombre: planTrabajo.nombre,
         vigencia: planTrabajo.vigencia,
-        periodo_id: planTrabajo.periodo_id?.toString() || '',
-        estado: 'Pendiente' // Estado fijo al editar
+        periodo_inicio_id: planTrabajo.periodo_inicio_id ? planTrabajo.periodo_inicio_id.toString() : '',
+        periodo_fin_id: planTrabajo.periodo_fin_id ?? null,
+        estado: 'Pendiente', // Estado fijo al editar
     });
+
+    const initialPeriodoFinLabel =
+        planTrabajo.periodo_fin?.nombre ??
+        (planTrabajo.vigencia === 'Semestral' ? planTrabajo.periodo_inicio?.nombre ?? '' : '');
+
+    const [periodoFinLabel, setPeriodoFinLabel] = useState<string>(initialPeriodoFinLabel);
+    const [periodoFinEstado, setPeriodoFinEstado] = useState<'none' | 'existing' | 'auto'>(
+        initialPeriodoFinLabel ? 'existing' : 'none'
+    );
     
     const { flash } = usePage().props as { flash?: { success?: string; error?: string } };
     
@@ -64,11 +80,6 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo, periodos }:
             toast.error('Por favor corrige los errores en el formulario');
         }
     }, [errors]);
-
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        put(route('investigadores.planes-trabajo.update', [investigador.id, data.id]));
-    };
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -94,10 +105,81 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo, periodos }:
         { value: 'Semestral', label: 'Semestral' }
     ];
 
-    const periodoOptions = periodos.map(periodo => ({
-        value: periodo.id.toString(),
-        label: periodo.nombre
-    }));
+    const periodoOptions = useMemo(() => {
+        const mapa = new Map<number, Periodo>();
+
+        periodos.forEach(periodo => {
+            if (periodo.estado === 'Activo') {
+                mapa.set(periodo.id, periodo);
+            }
+        });
+
+        if (planTrabajo.periodo_inicio) {
+            mapa.set(planTrabajo.periodo_inicio.id, planTrabajo.periodo_inicio);
+        }
+
+        return Array.from(mapa.values())
+            .sort((a, b) => a.nombre.localeCompare(b.nombre))
+            .map(periodo => ({
+                value: periodo.id.toString(),
+                label: periodo.nombre,
+            }));
+    }, [periodos, planTrabajo.periodo_inicio]);
+
+    const periodoInicioSeleccionado = useMemo(() => (
+        periodos.find(periodo => periodo.id.toString() === data.periodo_inicio_id) ?? planTrabajo.periodo_inicio ?? null
+    ), [data.periodo_inicio_id, periodos, planTrabajo.periodo_inicio]);
+
+    const getNextPeriodoNombre = (nombre: string): string | null => {
+        const match = nombre.match(/^(\d{4})-(A|B)$/);
+        if (!match) {
+            return null;
+        }
+        const year = parseInt(match[1], 10);
+        const label = match[2];
+        return label === 'A' ? `${year}-B` : `${year + 1}-A`;
+    };
+
+    useEffect(() => {
+        if (!data.vigencia || !data.periodo_inicio_id || !periodoInicioSeleccionado) {
+            setData('periodo_fin_id', null);
+            setPeriodoFinLabel('');
+            setPeriodoFinEstado('none');
+            return;
+        }
+
+        if (data.vigencia === 'Semestral') {
+            setData('periodo_fin_id', periodoInicioSeleccionado.id);
+            setPeriodoFinLabel(periodoInicioSeleccionado.nombre);
+            setPeriodoFinEstado('existing');
+            return;
+        }
+
+        const siguienteNombre = getNextPeriodoNombre(periodoInicioSeleccionado.nombre);
+        if (!siguienteNombre) {
+            setData('periodo_fin_id', null);
+            setPeriodoFinLabel('');
+            setPeriodoFinEstado('none');
+            return;
+        }
+
+        const periodoEncontrado = periodos.find(periodo => periodo.nombre === siguienteNombre);
+        if (periodoEncontrado) {
+            setData('periodo_fin_id', periodoEncontrado.id);
+            setPeriodoFinLabel(periodoEncontrado.nombre);
+            setPeriodoFinEstado('existing');
+            return;
+        }
+
+        setData('periodo_fin_id', null);
+        setPeriodoFinLabel(siguienteNombre);
+        setPeriodoFinEstado('auto');
+    }, [data.vigencia, data.periodo_inicio_id, periodoInicioSeleccionado, periodos, setData]);
+
+    const handleSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        put(route('investigadores.planes-trabajo.update', [investigador.id, data.id]));
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -143,19 +225,28 @@ export default function PlanTrabajoEdit({ investigador, planTrabajo, periodos }:
                                     <SearchSelect
                                         options={vigenciaOptions}
                                         value={data.vigencia}
-                                        onValueChange={(value) => setData('vigencia', String(value))}
+                                        onValueChange={(value) => setData('vigencia', value ? String(value) : '')}
                                         placeholder="Seleccionar vigencia..."
                                         name="vigencia"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="periodo_id">Período Activo</Label>
+                                    <Label htmlFor="periodo_inicio_id">Período de Inicio</Label>
                                     <SearchSelect
                                         options={periodoOptions}
-                                        value={data.periodo_id}
-                                        onValueChange={(value) => setData('periodo_id', String(value))}
+                                        value={data.periodo_inicio_id}
+                                        onValueChange={(value) => setData('periodo_inicio_id', value ? String(value) : '')}
                                         placeholder="Seleccionar período..."
-                                        name="periodo_id"
+                                        name="periodo_inicio_id"
+                                    />
+                                </div>
+                                <div>
+                                    <Label htmlFor="periodo_fin_id">Período Final</Label>
+                                    <Input
+                                        id='periodo_fin_id'
+                                        className="mt-1 bg-gray-100"
+                                        value={periodoFinLabel || ''}
+                                        readOnly
                                     />
                                 </div>
                                 <div>

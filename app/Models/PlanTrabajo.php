@@ -14,7 +14,8 @@ class PlanTrabajo extends Model
 
     protected $fillable = [
         'user_id',
-        'periodo_id',
+        'periodo_inicio_id',
+        'periodo_fin_id',
         'nombre',
         'vigencia',
         'estado'
@@ -41,11 +42,27 @@ class PlanTrabajo extends Model
     }
 
     /**
-     * Relación con el período asociado al plan
+     * Relación con el período de inicio del plan
      */
     public function periodo(): BelongsTo
     {
-        return $this->belongsTo(Periodo::class);
+        return $this->belongsTo(Periodo::class, 'periodo_inicio_id');
+    }
+
+    /**
+     * Relación con el período de inicio del plan (alias explícito)
+     */
+    public function periodoInicio(): BelongsTo
+    {
+        return $this->belongsTo(Periodo::class, 'periodo_inicio_id');
+    }
+
+    /**
+     * Relación con el período de cierre del plan
+     */
+    public function periodoFin(): BelongsTo
+    {
+        return $this->belongsTo(Periodo::class, 'periodo_fin_id');
     }
 
     /**

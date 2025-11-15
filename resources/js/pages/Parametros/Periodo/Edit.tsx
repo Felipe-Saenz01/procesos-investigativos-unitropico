@@ -36,8 +36,23 @@ interface EditProps {
 }
 
 export default function Edit({ periodo }: EditProps) {
+    // Parsear el nombre del período para extraer año y semestre
+    const parseNombre = (nombre: string): { año: string; semestre: string } => {
+        const match = nombre.match(/^(\d{4})-(A|B)$/);
+        if (match) {
+            return {
+                año: match[1],
+                semestre: match[2]
+            };
+        }
+        return { año: '', semestre: '' };
+    };
+
+    const { año, semestre } = parseNombre(periodo.nombre);
+
     const { data, setData, put, errors } = useForm({
-        nombre: periodo.nombre,
+        año: año,
+        semestre: semestre,
         fecha_limite_planeacion: periodo.fecha_limite_planeacion,
         fecha_limite_evidencias: periodo.fecha_limite_evidencias,
         estado: periodo.estado
@@ -75,17 +90,37 @@ export default function Edit({ periodo }: EditProps) {
                             }
                             
                             <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="nombre">Nombre del Período</Label>
-                                    <Input 
-                                        id='nombre' 
-                                        className="mt-1" 
-                                        value={data.nombre} 
-                                        onChange={(e) => setData('nombre', e.target.value)} 
-                                        type='text' 
-                                        name='nombre'
-                                        placeholder="Ej: 2024-1, Semestre 2024-I"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="año">Año</Label>
+                                        <Input 
+                                            id='año' 
+                                            className="mt-1" 
+                                            value={data.año} 
+                                            onChange={(e) => setData('año', e.target.value)} 
+                                            type='number' 
+                                            name='año'
+                                            placeholder="Ej: 2024"
+                                            min="2000"
+                                            max="2100"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="semestre">Semestre</Label>
+                                        <Select 
+                                            value={data.semestre} 
+                                            onValueChange={(value) => setData('semestre', value)}
+                                        >
+                                            <SelectTrigger className="mt-1">
+                                                <SelectValue placeholder="Seleccionar semestre" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="A">A</SelectItem>
+                                                <SelectItem value="B">B</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 
                                 <DatePicker

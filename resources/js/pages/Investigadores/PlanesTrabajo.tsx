@@ -31,6 +31,14 @@ interface PlanTrabajo {
     vigencia: string;
     estado: string;
     actividades: ActividadPlan[];
+    periodo_inicio?: {
+        id: number;
+        nombre: string;
+    } | null;
+    periodo_fin?: {
+        id: number;
+        nombre: string;
+    } | null;
 }
 
 interface Investigador {
@@ -127,6 +135,7 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                                     <TableRow>
                                         <TableHead className='font-bold'>Nombre</TableHead>
                                         <TableHead className='font-bold'>Vigencia</TableHead>
+                                        <TableHead className='font-bold'>Períodos</TableHead>
                                         <TableHead className='font-bold'>Estado</TableHead>
                                         <TableHead className='font-bold'>Actividades</TableHead>
                                         <TableHead className='font-bold'>Acciones</TableHead>
@@ -137,6 +146,21 @@ export default function PlanesTrabajo({ investigador, planesTrabajo }: PlanesTra
                                         <TableRow key={plan.id}>
                                             <TableCell className='font-medium whitespace-normal break-words'>{plan.nombre}</TableCell>
                                             <TableCell className='whitespace-normal break-words'>{plan.vigencia}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline">
+                                                        {plan.periodo_inicio?.nombre ?? 'Sin período'}
+                                                    </Badge>
+                                                    {plan.vigencia === 'Anual' && (
+                                                        <>
+                                                            <span className="text-sm text-muted-foreground">→</span>
+                                                            <Badge variant="outline">
+                                                                {plan.periodo_fin?.nombre ?? 'Pendiente'}
+                                                            </Badge>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                             <TableCell>
                                                 <EstadoBadge estado={plan.estado} />
                                             </TableCell>

@@ -38,9 +38,9 @@ interface PlanTrabajoWithActs {
     nombre: string;
     estado: string;
     vigencia: 'Anual' | 'Semestral';
-    periodo_id: number;
     actividades: ActividadPlanItem[];
-    periodo?: PeriodoInfo;
+    periodo_inicio?: PeriodoInfo | null;
+    periodo_fin?: PeriodoInfo | null;
 }
 
 // interface PeriodoOption { id: number; nombre: string }
@@ -53,7 +53,7 @@ interface Props {
     planTrabajo: PlanTrabajoWithActs;
     investigadorId: number;
     puedeCrear: boolean;
-    periodo: PeriodoInfo;
+    periodo: PeriodoInfo | null;
 }
 
 type TipoEvidenciaSeleccion = 'Archivo' | 'Enlace';
@@ -156,20 +156,30 @@ export default function InformeCreate({ planTrabajo, investigadorId, puedeCrear,
 
                             <div className="bg-blue-50 p-4 rounded-lg mb-6">
                                 <h3 className="font-semibold text-blue-900 mb-2">Información del Período</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                    <div>
-                                        <span className="font-medium">Período:</span>
-                                        <p className="text-blue-700">{periodo.nombre}</p>
+                                {periodo ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                        <div>
+                                            <span className="font-medium">Período:</span>
+                                            <p className="text-blue-700">{periodo.nombre}</p>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Fecha Inicio:</span>
+                                            <p className="text-blue-700">
+                                                {new Date(periodo.fecha_limite_planeacion).toLocaleDateString('es-ES')}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Fecha Fin:</span>
+                                            <p className="text-blue-700">
+                                                {new Date(periodo.fecha_limite_evidencias).toLocaleDateString('es-ES')}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="font-medium">Fecha Inicio:</span>
-                                        <p className="text-blue-700">{new Date(periodo.fecha_limite_planeacion).toLocaleDateString('es-ES')}</p>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium">Fecha Fin:</span>
-                                        <p className="text-blue-700">{new Date(periodo.fecha_limite_evidencias).toLocaleDateString('es-ES')}</p>
-                                    </div>
-                                </div>
+                                ) : (
+                                    <p className="text-sm text-blue-900">
+                                        No hay un período activo disponible para presentar el informe.
+                                    </p>
+                                )}
                             </div>
 
                             <div className='space-y-6'>

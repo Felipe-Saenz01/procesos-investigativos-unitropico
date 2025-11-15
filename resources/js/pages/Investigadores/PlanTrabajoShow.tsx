@@ -13,6 +13,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { Plus, SquarePen, Trash, Eye, History, Send, Download, FileText, ChevronDown, ChevronRight, SquareCheck } from 'lucide-react';
 import type { BreadcrumbItem } from '@/types';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface ActividadInvestigacion {
     id: number;
@@ -67,6 +68,14 @@ interface PlanTrabajo {
     actividades?: ActividadPlan[];
     revisiones?: Revision[];
     informes?: InformePlanTrabajo[];
+    periodo_inicio?: {
+        id: number;
+        nombre: string;
+    } | null;
+    periodo_fin?: {
+        id: number;
+        nombre: string;
+    } | null;
 }
 
 interface User {
@@ -192,6 +201,24 @@ export default function PlanTrabajoShow({ planTrabajo, investigador }: Props) {
                                         </label>
                                         <p className="text-gray-900 dark:text-white">{planTrabajo.vigencia}</p>
                                     </div>
+                                <div className="flex items-center justify-start gap-2 mt-2">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Períodos:
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline">
+                                            {planTrabajo.periodo_inicio?.nombre ?? 'Sin período'}
+                                        </Badge>
+                                        {planTrabajo.vigencia === 'Anual' && (
+                                            <>
+                                                <span className="text-sm text-gray-500 dark:text-gray-400">→</span>
+                                                <Badge variant="outline">
+                                                    {planTrabajo.periodo_fin?.nombre ?? 'Pendiente'}
+                                                </Badge>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
                                 </div>
                             </div>
 

@@ -27,18 +27,20 @@ class InformePlanTrabajoController extends Controller
             abort(403, 'No autorizado para crear informes de este plan.');
         }
 
-        // Validar si se puede crear informe
-        $periodo = Periodo::find($planTrabajo->periodo_id);
-        $fechaActual = now();
-        $enFechaValida = $periodo && $fechaActual >= $periodo->fecha_limite_planeacion && $fechaActual <= $periodo->fecha_limite_evidencias;
-        
-        $planTrabajo->load(['actividades.actividadInvestigacion', 'periodo']);
+        $planTrabajo->load([
+            'actividades.actividadInvestigacion',
+            'periodoInicio',
+            'periodoFin',
+            'informes',
+        ]);
+
+        $periodoElegible = $this->obtenerPeriodoElegibleParaInforme($planTrabajo);
 
         return inertia('Investigadores/InformeCreate', [
             'planTrabajo' => $planTrabajo,
             'investigadorId' => $planTrabajo->user_id,
-            'puedeCrear' => $planTrabajo->estado === 'Aprobado' && $enFechaValida,
-            'periodo' => $periodo,
+            'puedeCrear' => $planTrabajo->estado === 'Aprobado' && $periodoElegible !== null,
+            'periodo' => $periodoElegible,
         ]);
     }
 
@@ -69,46 +71,14 @@ class InformePlanTrabajoController extends Controller
             return back()->withErrors(['plan' => 'Solo se puede generar un informe cuando el plan está Aprobado.']);
         }
 
-        // Validar fechas del período del plan
-        $periodo = Periodo::find($planTrabajo->periodo_id);
-        if (!$periodo) {
-            return back()->withErrors(['periodo' => 'El período del plan no existe.']);
+        $planTrabajo->loadMissing(['periodoInicio', 'periodoFin', 'informes']);
+        $periodoElegible = $this->obtenerPeriodoElegibleParaInforme($planTrabajo);
+
+        if (!$periodoElegible) {
+            return back()->withErrors(['periodo' => 'No hay períodos disponibles (activos y sin informes previos) para registrar un nuevo informe.']);
         }
 
-        $fechaActual = now();
-            if ($fechaActual < $periodo->fecha_limite_planeacion || $fechaActual > $periodo->fecha_limite_evidencias) {
-            return back()->withErrors(['periodo' => 'No se puede presentar informe fuera de las fechas del período del plan.']);
-        }
-
-        // Validar informes según vigencia
-        $periodoId = $planTrabajo->periodo_id;
-        if ($planTrabajo->vigencia === 'Semestral') {
-            // Solo un informe en el mismo período
-            $existeInforme = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)
-                ->where('periodo_id', $periodoId)
-                ->exists();
-            if ($existeInforme) {
-                return back()->withErrors(['periodo' => 'Ya existe un informe para este período (plan semestral).']);
-            }
-        } else if ($planTrabajo->vigencia === 'Anual') {
-            // Un informe en el período actual y otro en el siguiente
-            $periodoSiguiente = Periodo::where('id', '>', $planTrabajo->periodo_id)
-                ->orderBy('id')
-                ->first();
-            
-            $periodosPermitidos = [$periodoId];
-            if ($periodoSiguiente) {
-                $periodosPermitidos[] = $periodoSiguiente->id;
-            }
-
-            $informesExistentes = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)
-                ->whereIn('periodo_id', $periodosPermitidos)
-                ->count();
-
-            if ($informesExistentes >= count($periodosPermitidos)) {
-                return back()->withErrors(['periodo' => 'Ya se han presentado todos los informes permitidos para este plan anual.']);
-            }
-        }
+        $periodoId = $periodoElegible->id;
 
         // Crear informe
         $informe = InformePlanTrabajo::create([
@@ -172,26 +142,52 @@ class InformePlanTrabajoController extends Controller
     }
 
     /**
-     * Verifica si el período es válido según la vigencia del plan.
+     * Obtiene el período (inicio o fin) disponible para registrar un informe.
      */
-    private function periodoPermitidoParaPlan(PlanTrabajo $plan, int $periodoId): bool
+    private function obtenerPeriodoElegibleParaInforme(PlanTrabajo $planTrabajo): ?Periodo
     {
-        if ($plan->vigencia === 'Semestral') {
-            return $plan->periodo_id === $periodoId;
+        $planTrabajo->loadMissing(['periodoInicio', 'periodoFin', 'informes']);
+
+        $periodos = collect([
+            $planTrabajo->periodoInicio,
+            $planTrabajo->vigencia === 'Anual' ? $planTrabajo->periodoFin : null,
+        ])->filter()->unique(fn ($periodo) => $periodo->id)->values();
+
+        if ($periodos->isEmpty()) {
+            return null;
         }
 
-        if ($plan->vigencia === 'Anual') {
-            $periodoSiguiente = Periodo::where('id', '>', $plan->periodo_id)
-                ->orderBy('id')
-                ->first();
-            $permitidos = [$plan->periodo_id];
-            if ($periodoSiguiente) {
-                $permitidos[] = $periodoSiguiente->id;
+        $periodosUsados = $planTrabajo->informes
+            ->pluck('periodo_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $fechaActual = now();
+
+        return $periodos->first(function (?Periodo $periodo) use ($periodosUsados, $fechaActual) {
+            if (!$periodo) {
+                return false;
             }
-            return in_array($periodoId, $permitidos, true);
-        }
 
-        return false;
+            if ($periodo->estado !== 'Activo') {
+                return false;
+            }
+
+            if ($periodo->fecha_limite_planeacion && $fechaActual->lt($periodo->fecha_limite_planeacion)) {
+                return false;
+            }
+
+            if ($periodo->fecha_limite_evidencias && $fechaActual->gt($periodo->fecha_limite_evidencias)) {
+                return false;
+            }
+
+            if ($periodosUsados->contains($periodo->id)) {
+                return false;
+            }
+
+            return true;
+        });
     }
 
     /**

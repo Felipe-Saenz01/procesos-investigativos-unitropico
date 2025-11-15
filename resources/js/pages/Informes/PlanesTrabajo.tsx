@@ -73,7 +73,8 @@ interface PlanesTrabajoProps {
         vigencia: string;
         created_at: string;
         user: { name: string };
-        periodo: { nombre: string };
+        periodo_inicio?: { nombre: string } | null;
+        periodo_fin?: { nombre: string } | null;
     }>;
     informes_por_periodo: Array<{
         id: number;
@@ -639,9 +640,14 @@ export default function PlanesTrabajo({
                                 <div key={plan.id} className="flex items-center justify-between p-4 border rounded-lg">
                                     <div className="space-y-1">
                                         <h4 className="font-medium">{plan.nombre}</h4>
-                                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                             <span>Investigador: {plan.user.name}</span>
-                                            <span>Período: {plan.periodo.nombre}</span>
+                                            <span>
+                                                Períodos: {plan.periodo_inicio?.nombre ?? 'Sin período'}
+                                                {plan.vigencia === 'Anual' && (
+                                                    <> → {plan.periodo_fin?.nombre ?? 'Pendiente'}</>
+                                                )}
+                                            </span>
                                             <span>Vigencia: {plan.vigencia}</span>
                                             <span>Creado: {new Date(plan.created_at).toLocaleDateString()}</span>
                                         </div>

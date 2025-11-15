@@ -15,6 +15,7 @@ use App\Models\PlanTrabajo;
 use App\Models\ActividadesPlan;
 use App\Models\ActividadesInvestigacion;
 use App\Models\InformePlanTrabajo;
+use Carbon\Carbon;
 
 class InvestigadorController extends Controller
 {
@@ -329,7 +330,9 @@ class InvestigadorController extends Controller
             return to_route('dashboard')->with('error', 'No tienes permisos para acceder a los planes de trabajo de este investigador.');
         }
 
-        $planes = $investigador->planesTrabajo()->with('actividades.actividadInvestigacion')->get();
+        $planes = $investigador->planesTrabajo()
+            ->with(['actividades.actividadInvestigacion', 'periodoInicio', 'periodoFin'])
+            ->get();
         return inertia('Investigadores/PlanesTrabajo', [
             'investigador' => $investigador,
             'planesTrabajo' => $planes,
@@ -343,7 +346,7 @@ class InvestigadorController extends Controller
             return to_route('dashboard')->with('error', 'No tienes permisos para crear planes de trabajo de este investigador.');
         }
 
-        $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
+        $periodos = Periodo::orderBy('nombre')->get(['id', 'nombre', 'estado', 'fecha_limite_planeacion', 'fecha_limite_evidencias']);
         return inertia('Investigadores/PlanTrabajoCreate', [
             'investigador' => $investigador,
             'periodos' => $periodos,
@@ -357,16 +360,24 @@ class InvestigadorController extends Controller
             return to_route('dashboard')->with('error', 'No tienes permisos para crear planes de trabajo de este investigador.');
         }
 
-        $request->validate([
+        $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'vigencia' => 'required|in:Anual,Semestral',
-            'periodo_id' => 'required|exists:periodos,id',
+            'periodo_inicio_id' => 'required|exists:periodos,id',
+            'periodo_fin_id' => 'nullable|exists:periodos,id',
         ]);
 
+        [$periodoInicio, $periodoFin] = $this->resolverPeriodosSegunVigencia(
+            $data['vigencia'],
+            (int) $data['periodo_inicio_id'],
+            $data['periodo_fin_id'] ? (int) $data['periodo_fin_id'] : null
+        );
+
         $investigador->planesTrabajo()->create([
-            'nombre' => $request->nombre,
-            'vigencia' => $request->vigencia,
-            'periodo_id' => $request->periodo_id,
+            'nombre' => $data['nombre'],
+            'vigencia' => $data['vigencia'],
+            'periodo_inicio_id' => $periodoInicio->id,
+            'periodo_fin_id' => $periodoFin->id,
             'estado' => 'Creado', // Estado inicial editable
         ]);
 
@@ -380,8 +391,11 @@ class InvestigadorController extends Controller
             return to_route('dashboard')->with('error', 'No tienes permisos para editar planes de trabajo de este investigador.');
         }
 
-        $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
-        $periodos = Periodo::where('estado', 'Activo')->get(['id', 'nombre']);
+        $planTrabajo = $investigador->planesTrabajo()
+            ->with(['periodoInicio', 'periodoFin'])
+            ->findOrFail($planTrabajoId);
+
+        $periodos = Periodo::orderBy('nombre')->get(['id', 'nombre', 'estado', 'fecha_limite_planeacion', 'fecha_limite_evidencias']);
         return inertia('Investigadores/PlanTrabajoEdit', [
             'investigador' => $investigador,
             'planTrabajo' => $planTrabajo,
@@ -397,18 +411,31 @@ class InvestigadorController extends Controller
         }
 
         $planTrabajo = $investigador->planesTrabajo()->findOrFail($planTrabajoId);
-        $request->validate([
+        $periodoInicioAnterior = $planTrabajo->periodo_inicio_id;
+        $data = $request->validate([
             'nombre' => 'required|string|max:255',
             'vigencia' => 'required|in:Anual,Semestral',
-            'periodo_id' => 'required|exists:periodos,id',
+            'periodo_inicio_id' => 'required|exists:periodos,id',
+            'periodo_fin_id' => 'nullable|exists:periodos,id',
         ]);
 
+        [$periodoInicio, $periodoFin] = $this->resolverPeriodosSegunVigencia(
+            $data['vigencia'],
+            (int) $data['periodo_inicio_id'],
+            $data['periodo_fin_id'] ? (int) $data['periodo_fin_id'] : null
+        );
+
         $planTrabajo->update([
-            'nombre' => $request->nombre,
-            'vigencia' => $request->vigencia,
-            'periodo_id' => $request->periodo_id,
+            'nombre' => $data['nombre'],
+            'vigencia' => $data['vigencia'],
+            'periodo_inicio_id' => $periodoInicio->id,
+            'periodo_fin_id' => $periodoFin->id,
             // No cambiar el estado, mantener el actual
         ]);
+
+        if ($periodoInicioAnterior !== $periodoInicio->id) {
+            $planTrabajo->actividades()->update(['periodo_id' => $periodoInicio->id]);
+        }
 
         return to_route('investigadores.planes-trabajo', $investigador->id)->with('success', 'Plan de trabajo actualizado exitosamente.');
     }
@@ -464,7 +491,13 @@ class InvestigadorController extends Controller
         }
 
         $planTrabajo = $investigador->planesTrabajo()
-            ->with(['actividades.actividadInvestigacion', 'revisiones.revisor', 'informes.evidencias.actividadPlan.actividadInvestigacion'])
+            ->with([
+                'actividades.actividadInvestigacion',
+                'revisiones.revisor',
+                'informes.evidencias.actividadPlan.actividadInvestigacion',
+                'periodoInicio',
+                'periodoFin',
+            ])
             ->findOrFail($planTrabajoId);
         
         // Verificar si el plan debe ser terminado automáticamente
@@ -482,122 +515,132 @@ class InvestigadorController extends Controller
         ]);
     }
 
-    /**
-     * Calcula la viabilidad para presentar informe del plan de trabajo.
-     * - Semestral: máximo 1 informe en el período del plan, y dentro de su ventana de fechas.
-     * - Anual: hasta 2 informes. El segundo debe ser en un período activo cuya fecha_limite_planeacion esté entre
-     *          [fecha_limite_evidencias del período base, fecha_limite_planeacion del período base + 1 año], y dentro de su ventana de fechas.
-     */
     private function computeInformeEligibility(PlanTrabajo $planTrabajo): array
     {
-        $periodoBase = Periodo::find($planTrabajo->periodo_id);
-        if (!$periodoBase) {
+        $periodos = collect([
+            $planTrabajo->periodoInicio,
+            $planTrabajo->vigencia === 'Anual' ? $planTrabajo->periodoFin : null,
+        ])->filter()->unique(fn ($periodo) => $periodo->id)->values();
+
+        if ($periodos->isEmpty()) {
             return [
                 'canCreate' => false,
                 'presentedCount' => 0,
                 'allowedPeriodId' => null,
-                'reason' => 'El período del plan no existe.',
+                'reason' => 'El plan no tiene períodos configurados.',
                 'missingNextPeriod' => false,
             ];
         }
 
-        $hoy = now();
-        $inWindowBase = $hoy->between($periodoBase->fecha_limite_planeacion, $periodoBase->fecha_limite_evidencias);
+        $informes = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)->get();
+        $presentedCount = $informes->count();
+        $informesPorPeriodo = $informes->groupBy('periodo_id');
 
-        $presentedCount = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)->count();
-
-        if ($planTrabajo->vigencia === 'Semestral') {
-            if ($presentedCount >= 1) {
-                return [
-                    'canCreate' => false,
-                    'presentedCount' => $presentedCount,
-                    'allowedPeriodId' => null,
-                    'reason' => 'Ya existe un informe para este período (plan semestral).',
-                    'missingNextPeriod' => false,
-                ];
-            }
-            return [
-                'canCreate' => $inWindowBase,
-                'presentedCount' => $presentedCount,
-                'allowedPeriodId' => $inWindowBase ? $periodoBase->id : null,
-                'reason' => $inWindowBase ? null : 'Fuera de las fechas del período del plan.',
-                'missingNextPeriod' => false,
-            ];
-        }
-
-        if ($planTrabajo->vigencia === 'Anual') {
-            if ($presentedCount === 0) {
-                return [
-                    'canCreate' => $inWindowBase,
-                    'presentedCount' => 0,
-                    'allowedPeriodId' => $inWindowBase ? $periodoBase->id : null,
-                    'reason' => $inWindowBase ? null : 'Fuera de las fechas del período del plan.',
-                    'missingNextPeriod' => false,
-                ];
+        $periodoElegible = $periodos->first(function ($periodo) use ($informesPorPeriodo) {
+            if (!$periodo) {
+                return false;
             }
 
-            if ($presentedCount >= 2) {
-                return [
-                    'canCreate' => false,
-                    'presentedCount' => $presentedCount,
-                    'allowedPeriodId' => null,
-                    'reason' => 'Ya se presentaron los informes permitidos para este plan anual.',
-                    'missingNextPeriod' => false,
-                ];
+            if ($periodo->estado !== 'Activo') {
+                return false;
             }
 
-            // Segundo informe: buscar período candidato entre [evidencias_base, planeacion_base + 1 año]
-            $limiteInferior = $periodoBase->fecha_limite_evidencias; // no traer periodos anteriores
-            $limiteSuperior = $periodoBase->fecha_limite_planeacion->copy()->addYear();
+            return !$informesPorPeriodo->has($periodo->id);
+        });
 
-            $periodosPosibles = Periodo::whereBetween('fecha_limite_planeacion', [$limiteInferior, $limiteSuperior])
-                ->orderBy('fecha_limite_planeacion', 'asc')
-                ->get();
-
-            $periodoCandidato = $periodosPosibles->first(function ($p) use ($hoy) {
-                return $hoy->between($p->fecha_limite_planeacion, $p->fecha_limite_evidencias);
-            });
-
-            if (!$periodoCandidato) {
-                return [
-                    'canCreate' => false,
-                    'presentedCount' => $presentedCount,
-                    'allowedPeriodId' => null,
-                    'reason' => 'Aún no hay un período activo dentro del rango permitido para el segundo informe.',
-                    'missingNextPeriod' => $periodosPosibles->isEmpty(),
-                ];
-            }
-
-            $yaHayEnCandidato = InformePlanTrabajo::where('plan_trabajo_id', $planTrabajo->id)
-                ->where('periodo_id', $periodoCandidato->id)
-                ->exists();
-
-            if ($yaHayEnCandidato) {
-                return [
-                    'canCreate' => false,
-                    'presentedCount' => $presentedCount,
-                    'allowedPeriodId' => null,
-                    'reason' => 'Ya existe un informe en el período candidato.',
-                    'missingNextPeriod' => false,
-                ];
-            }
+        if (!$periodoElegible) {
+            $tieneActivos = $periodos->contains(fn ($periodo) => $periodo->estado === 'Activo');
+            $reason = $tieneActivos
+                ? 'Ya se registraron informes para todos los períodos permitidos.'
+                : 'No hay períodos activos disponibles para registrar informes.';
 
             return [
-                'canCreate' => true,
+                'canCreate' => false,
                 'presentedCount' => $presentedCount,
-                'allowedPeriodId' => $periodoCandidato->id,
-                'reason' => null,
+                'allowedPeriodId' => null,
+                'reason' => $reason,
                 'missingNextPeriod' => false,
             ];
         }
 
         return [
-            'canCreate' => false,
+            'canCreate' => true,
             'presentedCount' => $presentedCount,
-            'allowedPeriodId' => null,
-            'reason' => 'Vigencia no soportada.',
+            'allowedPeriodId' => $periodoElegible->id,
+            'reason' => null,
             'missingNextPeriod' => false,
         ];
+    }
+
+    /**
+     * Determina los períodos de inicio y fin con base en la vigencia del plan.
+     */
+    private function resolverPeriodosSegunVigencia(string $vigencia, int $periodoInicioId, ?int $periodoFinId = null): array
+    {
+        $periodoInicio = Periodo::findOrFail($periodoInicioId);
+
+        if ($vigencia === 'Semestral') {
+            return [$periodoInicio, $periodoInicio];
+        }
+
+        if ($periodoFinId) {
+            $periodoFin = Periodo::findOrFail($periodoFinId);
+            return [$periodoInicio, $periodoFin];
+        }
+
+        $periodoFin = $this->obtenerPeriodoSiguiente($periodoInicio);
+
+        return [$periodoInicio, $periodoFin];
+    }
+
+    /**
+     * Busca (o crea) el período siguiente considerando la nomenclatura AAAA-A / AAAA-B.
+     */
+    private function obtenerPeriodoSiguiente(Periodo $periodoInicio): Periodo
+    {
+        $coincidencia = [];
+        if (!preg_match('/^(?P<year>\d{4})-(?P<label>A|B)$/', $periodoInicio->nombre, $coincidencia)) {
+            return $periodoInicio;
+        }
+
+        $year = (int) $coincidencia['year'];
+        $label = $coincidencia['label'];
+
+        if ($label === 'A') {
+            $targetYear = $year;
+            $targetLabel = 'B';
+        } else {
+            $targetYear = $year + 1;
+            $targetLabel = 'A';
+        }
+
+        $nombreObjetivo = sprintf('%d-%s', $targetYear, $targetLabel);
+        $periodoExistente = Periodo::where('nombre', $nombreObjetivo)->first();
+        if ($periodoExistente) {
+            return $periodoExistente;
+        }
+
+        $planeacionBase = $periodoInicio->fecha_limite_planeacion instanceof Carbon
+            ? $periodoInicio->fecha_limite_planeacion->copy()
+            : ($periodoInicio->fecha_limite_planeacion ? Carbon::parse($periodoInicio->fecha_limite_planeacion) : now());
+
+        $evidenciasBase = $periodoInicio->fecha_limite_evidencias instanceof Carbon
+            ? $periodoInicio->fecha_limite_evidencias->copy()
+            : ($periodoInicio->fecha_limite_evidencias ? Carbon::parse($periodoInicio->fecha_limite_evidencias) : $planeacionBase->copy()->addMonths(3));
+
+        $planeacionNueva = $planeacionBase->copy()->addMonths(6);
+        $evidenciasNueva = $evidenciasBase->copy()->addMonths(6);
+
+        if ($evidenciasNueva->lessThanOrEqualTo($planeacionNueva)) {
+            $evidenciasNueva = $planeacionNueva->copy()->addWeeks(2);
+        }
+
+        return Periodo::create([
+            'nombre' => $nombreObjetivo,
+            'fecha_limite_planeacion' => $planeacionNueva,
+            'fecha_limite_evidencias' => $evidenciasNueva,
+            'estado' => 'Inactivo',
+        ]);
     }
 
     // --- Métodos de Actividades del Plan ---
@@ -657,7 +700,7 @@ class InvestigadorController extends Controller
 
         $planTrabajo->actividades()->create([
             'actividad_investigacion_id' => $request->actividad_investigacion_id,
-            'periodo_id' => $planTrabajo->periodo_id, // Heredar del plan de trabajo
+            'periodo_id' => $planTrabajo->periodo_inicio_id, // Heredar del plan de trabajo
             'alcance' => $request->alcance,
             'entregable' => $request->entregable,
             'horas_semana' => $request->horas_semana,
@@ -770,6 +813,13 @@ class InvestigadorController extends Controller
 
         $planTrabajo->estado = 'Pendiente';
         $planTrabajo->save();
+
+        // Crear registro en revisables para el historial
+        $planTrabajo->crearRevision([
+            'user_id' => Auth::id(),
+            'estado' => 'Pendiente',
+            'comentario' => 'Plan de trabajo enviado para revisión por el investigador.'
+        ]);
 
         return to_route('investigadores.planes-trabajo.show', [$investigador->id, $planTrabajoId])->with('success', 'Plan de trabajo enviado para revisión exitosamente.');
     }

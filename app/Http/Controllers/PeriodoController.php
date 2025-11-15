@@ -33,17 +33,31 @@ class PeriodoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255|unique:periodos,nombre',
+            'año' => 'required|integer|min:2000|max:2100',
+            'semestre' => 'required|in:A,B',
             'fecha_limite_planeacion' => 'required|date',
             'fecha_limite_evidencias' => 'required|date|after:fecha_limite_planeacion',
             'estado' => 'required|in:Activo,Inactivo',
         ], [
-            'nombre.unique' => 'Ya existe un período con este nombre.',
+            'año.required' => 'El año es requerido.',
+            'año.integer' => 'El año debe ser un número entero.',
+            'año.min' => 'El año debe ser mayor o igual a 2000.',
+            'año.max' => 'El año debe ser menor o igual a 2100.',
+            'semestre.required' => 'El semestre es requerido.',
+            'semestre.in' => 'El semestre debe ser A o B.',
             'fecha_limite_evidencias.after' => 'La fecha límite de evidencias debe ser posterior a la fecha de planeación.',
         ]);
 
+        // Concatenar año y semestre para formar el nombre
+        $nombre = $request->año . '-' . $request->semestre;
+
+        // Validar que el nombre no exista
+        if (Periodo::where('nombre', $nombre)->exists()) {
+            return back()->withErrors(['nombre' => 'Ya existe un período con este nombre.'])->withInput();
+        }
+
         Periodo::create([
-            'nombre' => $request->nombre,
+            'nombre' => $nombre,
             'fecha_limite_planeacion' => $request->fecha_limite_planeacion,
             'fecha_limite_evidencias' => $request->fecha_limite_evidencias,
             'estado' => $request->estado,
@@ -78,17 +92,31 @@ class PeriodoController extends Controller
     public function update(Request $request, Periodo $periodo)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255|unique:periodos,nombre,' . $periodo->id,
+            'año' => 'required|integer|min:2000|max:2100',
+            'semestre' => 'required|in:A,B',
             'fecha_limite_planeacion' => 'required|date',
             'fecha_limite_evidencias' => 'required|date|after:fecha_limite_planeacion',
             'estado' => 'required|in:Activo,Inactivo',
         ], [
-            'nombre.unique' => 'Ya existe un período con este nombre.',
+            'año.required' => 'El año es requerido.',
+            'año.integer' => 'El año debe ser un número entero.',
+            'año.min' => 'El año debe ser mayor o igual a 2000.',
+            'año.max' => 'El año debe ser menor o igual a 2100.',
+            'semestre.required' => 'El semestre es requerido.',
+            'semestre.in' => 'El semestre debe ser A o B.',
             'fecha_limite_evidencias.after' => 'La fecha límite de evidencias debe ser posterior a la fecha de planeación.',
         ]);
 
+        // Concatenar año y semestre para formar el nombre
+        $nombre = $request->año . '-' . $request->semestre;
+
+        // Validar que el nombre no exista (excepto para el período actual)
+        if (Periodo::where('nombre', $nombre)->where('id', '!=', $periodo->id)->exists()) {
+            return back()->withErrors(['nombre' => 'Ya existe un período con este nombre.'])->withInput();
+        }
+
         $periodo->update([
-            'nombre' => $request->nombre,
+            'nombre' => $nombre,
             'fecha_limite_planeacion' => $request->fecha_limite_planeacion,
             'fecha_limite_evidencias' => $request->fecha_limite_evidencias,
             'estado' => $request->estado,
