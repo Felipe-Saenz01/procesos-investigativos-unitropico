@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 
 return new class extends Migration
 {
@@ -33,8 +34,8 @@ return new class extends Migration
         });
 
         // Asegurar que los nuevos campos no queden nulos
-        DB::statement('ALTER TABLE plan_trabajos ALTER COLUMN periodo_inicio_id SET NOT NULL');
-        DB::statement('ALTER TABLE plan_trabajos ALTER COLUMN periodo_fin_id SET NOT NULL');
+        $this->setColumnNotNull('plan_trabajos', 'periodo_inicio_id');
+        $this->setColumnNotNull('plan_trabajos', 'periodo_fin_id');
     }
 
     /**
@@ -58,7 +59,27 @@ return new class extends Migration
             $table->dropColumn(['periodo_inicio_id', 'periodo_fin_id']);
         });
 
-        DB::statement('ALTER TABLE plan_trabajos ALTER COLUMN periodo_id SET NOT NULL');
+        $this->setColumnNotNull('plan_trabajos', 'periodo_id');
+    }
+    
+    /**
+     * Ajusta una columna para que no permita valores nulos considerando el motor de base de datos.
+     */
+    protected function setColumnNotNull(string $table, string $column): void
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            DB::statement("ALTER TABLE {$table} ALTER COLUMN {$column} SET NOT NULL");
+            return;
+        }
+
+        if ($driver === 'mysql') {
+            DB::statement("ALTER TABLE `{$table}` MODIFY `{$column}` BIGINT UNSIGNED NOT NULL");
+            return;
+        }
+
+        throw new RuntimeException("Driver de base de datos no soportado para modificar la columna {$column} en {$table}.");
     }
 };
 
