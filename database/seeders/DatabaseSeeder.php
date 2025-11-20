@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\GrupoInvestigacion;
 use App\Models\SubTipoProducto;
 use App\Models\TipoContrato;
 use App\Models\TipoProducto;
@@ -176,21 +175,21 @@ class DatabaseSeeder extends Seeder
             ],
         ];
 
-        $gruposInvestigacion = [
-            [
-                'nombre' => 'TICTRÓPICO',
-                'correo' => 'tictropico@unitropico.edu.co'
-            ],
-            [
-                'nombre' => 'GIEROC',
-                'correo' => 'gieroc@unitropico.edu.co'
-            ],
-            [
-                'nombre' => 'GINBIO',
-                'correo' => 'ginbio@unitropico.edu.co'
-            ],
-
-        ];
+        // Grupos de investigación no se crean automáticamente
+        // $gruposInvestigacion = [
+        //     [
+        //         'nombre' => 'TICTRÓPICO',
+        //         'correo' => 'tictropico@unitropico.edu.co'
+        //     ],
+        //     [
+        //         'nombre' => 'GIEROC',
+        //         'correo' => 'gieroc@unitropico.edu.co'
+        //     ],
+        //     [
+        //         'nombre' => 'GINBIO',
+        //         'correo' => 'ginbio@unitropico.edu.co'
+        //     ],
+        // ];
 
         $escalafonesProfesoral = [
             [
@@ -229,7 +228,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
         $this->call(ConvocatoriaPermissionSeeder::class);
-        $this->call(ConvocatoriaSeeder::class);
+        // $this->call(ConvocatoriaSeeder::class); // Comentado: no se ejecuta automáticamente
 
         // Crear actividades de investigación, tipos de productos y sus subtipos
         foreach ($actividadesInvestigacion as $actividad) {
@@ -253,12 +252,13 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        foreach ($gruposInvestigacion as $grupo) {
-            GrupoInvestigacion::create([
-                'nombre' => $grupo['nombre'],
-                'correo' => $grupo['correo'],
-            ]);
-        }
+        // Grupos de investigación no se crean automáticamente
+        // foreach ($gruposInvestigacion as $grupo) {
+        //     GrupoInvestigacion::create([
+        //         'nombre' => $grupo['nombre'],
+        //         'correo' => $grupo['correo'],
+        //     ]);
+        // }
 
         foreach ($escalafonesProfesoral as $escalafonProfesoral) {
             EscalafonProfesoral::create([
@@ -274,38 +274,37 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $grupos = GrupoInvestigacion::all();
-        $roles_users = ['Investigador', 'Lider Grupo'];
+        // Crear 3 usuarios administradores
+        $administradores = [
+            [
+                'name' => 'Felipe Admin',
+                'email' => 'felipe.admin@unitropico.edu.co',
+                'cedula' => 1000000001,
+            ],
+            [
+                'name' => 'Vicerectoria',
+                'email' => 'vicerectoria@unitropico.edu.co',
+                'cedula' => 1000000002,
+            ],
+            [
+                'name' => 'Administrador',
+                'email' => 'administrador@unitropico.edu.co',
+                'cedula' => 1000000003,
+            ],
+        ];
 
-        $users = User::factory()->count(10)->create([
-            'tipo' => function () use ($roles_users) {
-                return $roles_users[array_rand($roles_users)]; // Asignar un rol aleatorio
-            },
-            'grupo_investigacion_id' => function () use ($grupos) {
-                return $grupos->random()->id; // Asignar a un grupo aleatorio
-            },
-            'password' => bcrypt('password'),
-        ]);
-
-        // Asignar rol según el tipo
-        foreach ($users as $user) {
-            if ($user->tipo === 'Investigador') {
-                $user->assignRole('Investigador');
-            } elseif ($user->tipo === 'Lider Grupo') {
-                $user->assignRole('Lider Grupo');
-            }
+        foreach ($administradores as $adminData) {
+            $admin = User::firstOrCreate(
+                ['email' => $adminData['email']],
+                [
+                    'name' => $adminData['name'],
+                    'password' => bcrypt('administrador'),
+                    'tipo' => 'Administrador',
+                    'cedula' => $adminData['cedula'],
+                    'email_verified_at' => now(),
+                ]
+            );
+            $admin->assignRole('Administrador');
         }
-
-        // Crear usuario administrador
-        $admin = User::firstOrCreate([
-            'email' => 'administrador@gmail.com',
-        ], [
-            'name' => 'Administrador',
-            'password' => bcrypt('administrador'),
-            'tipo' => 'Administrador',
-            'cedula' => 1234567890,
-            'email_verified_at' => now(),
-        ]);
-        $admin->assignRole('Administrador');
     }
 }
