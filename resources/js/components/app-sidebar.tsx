@@ -6,8 +6,9 @@ import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { usePermissions } from '@/hooks/use-permissions';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import { LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone, BrainCircuit, BarChart3 } from 'lucide-react';
+import { BookOpen, LayoutGrid, Layers2, LayoutList, LibraryBig, Users, UserCheck, SquareChartGantt, FileText, Activity, Megaphone, BrainCircuit, BarChart3 } from 'lucide-react';
 import AppLogo from './app-logo';
+import { NavFooter } from './nav-footer';
 
 // Extender NavItem para incluir permisos requeridos
 interface NavItemWithPermissions extends NavItem {
@@ -119,18 +120,13 @@ const NavParamsItems: NavItemWithPermissions[] = [
 
 ];
 
-// const footerNavItems: NavItem[] = [
-//     {
-//         title: 'Repository',
-//         href: 'https://github.com/laravel/react-starter-kit',
-//         icon: Folder,
-//     },
-//     {
-//         title: 'Documentation',
-//         href: 'https://laravel.com/docs/starter-kits#react',
-//         icon: BookOpen,
-//     },
-// ];
+const footerNavItems: NavItem[] = [
+    {
+        title: 'Manual de Usuario',
+        href: 'https://felipe-saenz01.github.io/manual_usuario_investigacion/',
+        icon: BookOpen,
+    },
+];
 
 // Función helper para determinar si una ruta está activa
 function isRouteActive(currentUrl: string, routeHref: string): boolean {
@@ -233,7 +229,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                {/* <NavFooter items={footerNavItems} className="mt-auto" /> */}
+                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
